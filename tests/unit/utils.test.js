@@ -97,6 +97,15 @@ import {
 import fs from 'fs';
 import path from 'path';
 
+// Mock task-validator for utils tests
+const mockValidateTasksFile = jest.fn();
+const mockFormatAjvError = jest.fn((error) => `Formatted: ${error.message} on ${error.instancePath}`);
+jest.mock('../../scripts/modules/task-validator.js', () => ({
+  validateTasksFile: mockValidateTasksFile,
+  formatAjvError: mockFormatAjvError,
+}));
+
+
 // Mock config-manager to provide config values
 const mockGetLogLevel = jest.fn(() => 'info'); // Default log level for tests
 const mockGetDebugFlag = jest.fn(() => false); // Default debug flag for tests
@@ -633,6 +642,111 @@ describe('Utils Module', () => {
 			expect(cycles).toContain('B');
 		});
 	});
+
+  describe('readJSON with validation', () => {
+    beforeEach(() => {
+      mockValidateTasksFile.mockReset();
+      fs.readFileSync.mockReset();
+      // Reset log spy if it's a global spy, or re-spy if local
+      jest.spyOn(global.console, 'log').mockClear();
+      jest.spyOn(global.console, 'warn').mockClear();
+    });
+
+    test('should call validateTasksFile and log warnings if tasks.json is invalid', () => {
+      const fakeTasksPath = 'path/to/tasks.json';
+      const invalidJsonString = '{ "some": "data" }'; // Assume this is parsable but invalid per schema
+      const mockError = { instancePath: '/status", message: "is invalid' };
+
+      fs.readFileSync.mockReturnValue(invalidJsonString);
+      mockValidateTasksFile.mockReturnValue({ isValid: false, errors: [mockError] });
+
+      const consoleWarnSpy = jest.spyOn(mockConsole, 'warn');
+
+      readJSON(fakeTasksPath);
+
+      expect(fs.readFileSync).toHaveBeenCalledWith(fakeTasksPath, 'utf8');
+      expect(mockValidateTasksFile).toHaveBeenCalledWith(JSON.parse(invalidJsonString));
+      expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining(`Validation warning for ${fakeTasksPath} - Formatted: ${mockError.message} on ${mockError.instancePath}`));
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    test('should return data even if tasks.json validation fails', () => {
+      const fakeTasksPath = 'path/to/tasks.json';
+      const jsonData = { "valid": "json", "invalid": "schema" };
+      fs.readFileSync.mockReturnValue(JSON.stringify(jsonData));
+      mockValidateTasksFile.mockReturnValue({ isValid: false, errors: [{ message: "failed" }] });
+
+      const result = readJSON(fakeTasksPath);
+
+      expect(result).toEqual(jsonData);
+    });
+
+    test('should not call validateTasksFile for non-tasks.json files', () => {
+      const fakeOtherPath = 'path/to/other.json';
+      fs.readFileSync.mockReturnValue('{}');
+
+      readJSON(fakeOtherPath);
+
+      expect(mockValidateTasksFile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('writeJSON with validation', () => {
+    beforeEach(() => {
+      mockValidateTasksFile.mockReset();
+      fs.writeFileSync.mockClear();
+      jest.spyOn(mockConsole, 'error').mockClear();
+    });
+
+    test('should throw error and not write if tasks.json data is invalid', () => {
+      const fakeTasksPath = 'path/to/tasks.json';
+      const dataToWrite = { content: "invalid" };
+      const mockError = { instancePath: '/field', message: 'is bad' };
+      mockValidateTasksFile.mockReturnValue({ isValid: false, errors: [mockError] });
+      const consoleErrorSpy = jest.spyOn(mockConsole, 'error');
+
+      expect(() => {
+        writeJSON(fakeTasksPath, dataToWrite);
+      }).toThrow('Tasks file validation failed. Aborting write operation.');
+
+      expect(mockValidateTasksFile).toHaveBeenCalledWith(dataToWrite); // Assumes dataToWrite is already cleanData
+      expect(fs.writeFileSync).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining(`Validation failed for ${fakeTasksPath}. Not writing to disk.`));
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining(`- Formatted: ${mockError.message} on ${mockError.instancePath}`));
+
+      consoleErrorSpy.mockRestore();
+    });
+
+    test('should write to disk if tasks.json data is valid', () => {
+      const fakeTasksPath = 'path/to/tasks.json';
+      const dataToWrite = { content: "valid" };
+      mockValidateTasksFile.mockReturnValue({ isValid: true });
+
+      writeJSON(fakeTasksPath, dataToWrite);
+
+      expect(mockValidateTasksFile).toHaveBeenCalledWith(dataToWrite);
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        fakeTasksPath,
+        JSON.stringify(dataToWrite, null, 2),
+        'utf8'
+      );
+    });
+
+    test('should write to disk for non-tasks.json files without validation call', () => {
+      const fakeOtherPath = 'path/to/other.json';
+      const dataToWrite = { content: "any" };
+
+      writeJSON(fakeOtherPath, dataToWrite);
+
+      expect(mockValidateTasksFile).not.toHaveBeenCalled();
+      expect(fs.writeFileSync).toHaveBeenCalledWith(
+        fakeOtherPath,
+        JSON.stringify(dataToWrite, null, 2),
+        'utf8'
+      );
+    });
+  });
 });
 
 describe('CLI Flag Format Validation', () => {

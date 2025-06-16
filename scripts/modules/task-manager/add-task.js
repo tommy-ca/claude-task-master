@@ -29,6 +29,7 @@ import { generateObjectService } from '../ai-services-unified.js';
 import { getDefaultPriority } from '../config-manager.js';
 import ContextGatherer from '../utils/contextGatherer.js';
 import generateTaskFiles from './generate-task-files.js';
+import { validateTask, formatAjvError } from '../task-validator.js';
 
 // Define Zod schema for the expected AI output object
 const AiTaskDataSchema = z.object({
@@ -520,6 +521,16 @@ async function addTask(
 			priority: effectivePriority,
 			subtasks: [] // Initialize with empty subtasks array
 		};
+
+		// Validate the new task structure before adding
+		const { isValid, errors: taskErrors } = validateTask(newTask);
+		if (!isValid) {
+			report('Error: Attempted to add an invalid task.', 'error');
+			taskErrors.forEach(error => {
+				report(`- ${formatAjvError(error)}`, 'error');
+			});
+			throw new Error('New task validation failed.');
+		}
 
 		// Additional check: validate all dependencies in the AI response
 		if (taskData.dependencies?.length) {
