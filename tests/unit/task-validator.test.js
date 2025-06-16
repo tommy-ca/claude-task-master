@@ -3,6 +3,7 @@ import {
   validateTasksArray,
   validateTasksFile,
   formatAjvError,
+  resetSchemaState,
 } from '../../scripts/modules/task-validator.js';
 
 // Minimal valid task for reuse
@@ -27,6 +28,10 @@ const createValidMetadata = () => ({
 });
 
 describe('task-validator.js', () => {
+  beforeEach(() => {
+    // Reset schema state before each test to ensure clean state
+    resetSchemaState();
+  });
   describe('validateTask', () => {
     test('should return isValid: true for a valid task object', () => {
       const task = createValidTask();
