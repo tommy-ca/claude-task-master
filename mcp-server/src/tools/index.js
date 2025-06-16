@@ -22,6 +22,7 @@ import { registerClearSubtasksTool } from './clear-subtasks.js';
 import { registerExpandAllTool } from './expand-all.js';
 import { registerRemoveDependencyTool } from './remove-dependency.js';
 import { registerValidateDependenciesTool } from './validate-dependencies.js';
+import { registerValidateTasksTool } from './validate-tasks.js';
 import { registerFixDependenciesTool } from './fix-dependencies.js';
 import { registerComplexityReportTool } from './complexity-report.js';
 import { registerAddDependencyTool } from './add-dependency.js';
@@ -76,10 +77,11 @@ export function registerTaskMasterTools(server) {
 		registerClearSubtasksTool(server);
 		registerMoveTaskTool(server);
 
-		// Group 6: Dependency Management
+		// Group 6: Dependency Management & Validation
 		registerAddDependencyTool(server);
 		registerRemoveDependencyTool(server);
 		registerValidateDependenciesTool(server);
+		registerValidateTasksTool(server);
 		registerFixDependenciesTool(server);
 
 		// Group 7: Tag Management
