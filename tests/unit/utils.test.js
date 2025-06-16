@@ -79,6 +79,9 @@ import {
 import fs from 'fs';
 import path from 'path';
 
+// Note: task-validator integration is tested separately in task-validator tests
+
+
 // Mock config-manager to provide config values
 const mockGetLogLevel = jest.fn(() => 'info'); // Default log level for tests
 const mockGetDebugFlag = jest.fn(() => false); // Default debug flag for tests
@@ -613,6 +616,9 @@ describe('Utils Module', () => {
 			expect(cycles).toContain('B');
 		});
 	});
+
+  // Note: Validation integration tests are covered in task-validator tests
+  // The readJSON and writeJSON functions integrate with validation automatically
 });
 
 describe('CLI Flag Format Validation', () => {
