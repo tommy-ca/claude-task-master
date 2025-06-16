@@ -1,169 +1,138 @@
-import Ajv from 'ajv';
-import addFormats from 'ajv-formats';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { z } from 'zod';
 
-// Helper to get __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Define Zod schemas for task validation
+const TaskStatusSchema = z.enum(['pending', 'in-progress', 'done', 'review', 'deferred', 'cancelled']);
+const TaskPrioritySchema = z.enum(['high', 'medium', 'low']);
 
-// Schema compilation state
-let schemaCompilationState = {
-  isInitialized: false,
-  initializationError: null,
-  validateTaskSchema: null,
-  validateTasksFileSchema: null,
-  ajv: null
-};
+// Base task schema (without subtasks to avoid circular reference)
+const BaseTaskSchema = z.object({
+  id: z.number().int().describe('Unique identifier for the task'),
+  title: z.string().describe('Title of the task'),
+  description: z.string().describe('Detailed description of the task'),
+  status: TaskStatusSchema.describe('Current status of the task'),
+  dependencies: z.array(z.number().int()).optional().describe('List of task IDs that this task depends on'),
+  priority: TaskPrioritySchema.default('medium').describe('Priority level of the task'),
+  details: z.string().optional().describe('Additional details or notes for the task'),
+  testStrategy: z.string().optional().describe('Testing strategy for the task'),
+  previousStatus: z.string().optional().describe('The status of the task before the current status'),
+  acceptanceCriteria: z.string().optional().describe('Acceptance criteria for completing the task'),
+  parentTaskId: z.number().int().optional().describe('ID of the parent task, if this is a subtask')
+});
+
+// Task schema with recursive subtasks
+const TaskSchema = BaseTaskSchema.extend({
+  subtasks: z.lazy(() => z.array(TaskSchema)).optional().describe('List of subtasks')
+});
+
+// Metadata schema for tasks file
+const MetadataSchema = z.object({
+  created: z.string().datetime().describe('Creation timestamp'),
+  updated: z.string().datetime().describe('Last update timestamp'),
+  description: z.string().describe('Description of the tag/section')
+});
+
+// Tag section schema
+const TagSectionSchema = z.object({
+  tasks: z.array(TaskSchema).describe('Array of tasks in this tag'),
+  metadata: MetadataSchema.describe('Metadata for this tag section')
+});
+
+// Tasks file schema (object with dynamic tag names)
+const TasksFileSchema = z.record(z.string(), TagSectionSchema).describe('Tasks file with tag sections');
 
 /**
- * Initializes the schema validation system with robust error handling.
- * @returns {Object} Initialization result with success status and error details
+ * Converts Zod validation errors to a format compatible with the existing error handling
+ * @param {z.ZodError} zodError - Zod validation error
+ * @returns {Array} Array of error objects in AJV-like format
  */
-function initializeSchemas() {
-  if (schemaCompilationState.isInitialized) {
-    return {
-      success: !schemaCompilationState.initializationError,
-      error: schemaCompilationState.initializationError
-    };
-  }
-
-  try {
-    // Adjust the path according to the actual location of schema files relative to this script
-    const taskSchemaPath = path.resolve(__dirname, '../../schemas/task.schema.json');
-    const tasksFileSchemaPath = path.resolve(__dirname, '../../schemas/tasks-file.schema.json');
-
-    // Check if schema files exist
-    if (!fs.existsSync(taskSchemaPath)) {
-      throw new Error(`Task schema file not found at: ${taskSchemaPath}`);
-    }
-    if (!fs.existsSync(tasksFileSchemaPath)) {
-      throw new Error(`Tasks file schema not found at: ${tasksFileSchemaPath}`);
-    }
-
-    // Load and parse schemas with error handling
-    let taskSchema, tasksFileSchema;
-    try {
-      const taskSchemaContent = fs.readFileSync(taskSchemaPath, 'utf-8');
-      taskSchema = JSON.parse(taskSchemaContent);
-    } catch (error) {
-      throw new Error(`Failed to load or parse task schema: ${error.message}`);
-    }
-
-    try {
-      const tasksFileSchemaContent = fs.readFileSync(tasksFileSchemaPath, 'utf-8');
-      tasksFileSchema = JSON.parse(tasksFileSchemaContent);
-    } catch (error) {
-      throw new Error(`Failed to load or parse tasks file schema: ${error.message}`);
-    }
-
-    // Initialize AJV with error handling
-    let ajv;
-    try {
-      ajv = new Ajv({ allErrors: true, verbose: true });
-      addFormats(ajv);
-    } catch (error) {
-      throw new Error(`Failed to initialize AJV validator: ${error.message}`);
-    }
-
-    // Add task schema to Ajv instance to resolve $ref in tasksFileSchema
-    try {
-      ajv.addSchema(taskSchema, 'task.schema.json');
-    } catch (error) {
-      throw new Error(`Failed to add task schema to AJV: ${error.message}`);
-    }
-
-    // Compile schemas with error handling
-    let validateTaskSchema, validateTasksFileSchema;
-    try {
-      validateTaskSchema = ajv.compile(taskSchema);
-    } catch (error) {
-      throw new Error(`Failed to compile task schema: ${error.message}`);
-    }
-
-    try {
-      validateTasksFileSchema = ajv.compile(tasksFileSchema);
-    } catch (error) {
-      throw new Error(`Failed to compile tasks file schema: ${error.message}`);
-    }
-
-    // Store successful compilation results
-    schemaCompilationState = {
-      isInitialized: true,
-      initializationError: null,
-      validateTaskSchema,
-      validateTasksFileSchema,
-      ajv
+function convertZodErrorsToAjvFormat(zodError) {
+  return zodError.errors.map(error => {
+    // Convert path to AJV format (with leading slash)
+    const instancePath = error.path.length > 0 ? `/${error.path.join('/')}` : '';
+    
+    const baseError = {
+      keyword: mapZodCodeToAjvKeyword(error.code),
+      message: error.message,
+      instancePath: instancePath,
+      schemaPath: `#${instancePath}`,
+      params: {}
     };
 
-    return { success: true, error: null };
+    // Add specific data and params based on error type
+    if (error.code === 'invalid_enum_value') {
+      baseError.data = error.received;
+      baseError.params = { allowedValues: error.options };
+    } else if (error.code === 'invalid_type') {
+      baseError.data = error.received;
+      baseError.expected = error.expected;
+      baseError.received = error.received;
+      
+      // Handle missing required fields (undefined received)
+      if (error.received === 'undefined') {
+        baseError.keyword = 'required';
+        // For missing required properties, extract the property name from the path
+        const propertyName = error.path[error.path.length - 1];
+        baseError.params = { missingProperty: propertyName };
+        baseError.instancePath = error.path.length > 1 ? `/${error.path.slice(0, -1).join('/')}` : '';
+      } else if (error.expected === 'number') {
+        baseError.keyword = 'type';
+        baseError.params = { type: 'integer' };
+      } else {
+        baseError.keyword = 'type';
+        baseError.params = { type: error.expected };
+      }
+    } else if (error.code === 'too_small') {
+      baseError.data = error.received;
+      baseError.minimum = error.minimum;
+    } else if (error.code === 'too_big') {
+      baseError.data = error.received;
+      baseError.maximum = error.maximum;
+    } else {
+      baseError.data = error.received || error.input;
+    }
 
-  } catch (error) {
-    // Store initialization error
-    schemaCompilationState = {
-      isInitialized: true,
-      initializationError: error,
-      validateTaskSchema: null,
-      validateTasksFileSchema: null,
-      ajv: null
-    };
-
-    return { success: false, error };
-  }
+    return baseError;
+  });
 }
 
 /**
- * Gets the validation functions, initializing schemas if needed.
- * @returns {Object} Validation functions or error state
+ * Maps Zod error codes to AJV keywords for compatibility
+ * @param {string} zodCode - Zod error code
+ * @returns {string} AJV keyword
  */
-function getValidationFunctions() {
-  const initResult = initializeSchemas();
-  if (!initResult.success) {
-    return {
-      success: false,
-      error: initResult.error,
-      validateTaskSchema: null,
-      validateTasksFileSchema: null
-    };
-  }
-
-  return {
-    success: true,
-    error: null,
-    validateTaskSchema: schemaCompilationState.validateTaskSchema,
-    validateTasksFileSchema: schemaCompilationState.validateTasksFileSchema
+function mapZodCodeToAjvKeyword(zodCode) {
+  const mapping = {
+    'invalid_type': 'type',
+    'invalid_enum_value': 'enum',
+    'too_small': 'minimum',
+    'too_big': 'maximum',
+    'invalid_string': 'format',
+    'invalid_date': 'format'
   };
+  
+  return mapping[zodCode] || zodCode;
 }
 
 /**
- * Validates a task object against the task.schema.json.
+ * Validates a task object against the task schema.
  * @param {object} taskObject - The task object to validate.
  * @returns {{ isValid: boolean, errors: object[] | null, schemaError?: string }} Validation result.
  */
 export function validateTask(taskObject) {
-  const validationFunctions = getValidationFunctions();
-  
-  if (!validationFunctions.success) {
-    return {
-      isValid: false,
-      errors: [{
-        keyword: 'schema-compilation',
-        message: `Schema compilation failed: ${validationFunctions.error.message}`,
-        instancePath: '',
-        schemaPath: ''
-      }],
-      schemaError: validationFunctions.error.message
-    };
-  }
-
   try {
-    const isValid = validationFunctions.validateTaskSchema(taskObject);
+    TaskSchema.parse(taskObject);
     return {
-      isValid,
-      errors: isValid ? null : validationFunctions.validateTaskSchema.errors,
+      isValid: true,
+      errors: null
     };
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        isValid: false,
+        errors: convertZodErrorsToAjvFormat(error)
+      };
+    }
+    
     return {
       isValid: false,
       errors: [{
@@ -178,33 +147,25 @@ export function validateTask(taskObject) {
 }
 
 /**
- * Validates the entire tasks file content against the tasks-file.schema.json.
+ * Validates the entire tasks file content against the tasks file schema.
  * @param {object} tasksFileObject - The tasks file content (as a JavaScript object).
  * @returns {{ isValid: boolean, errors: object[] | null, schemaError?: string }} Validation result.
  */
 export function validateTasksFile(tasksFileObject) {
-  const validationFunctions = getValidationFunctions();
-  
-  if (!validationFunctions.success) {
-    return {
-      isValid: false,
-      errors: [{
-        keyword: 'schema-compilation',
-        message: `Schema compilation failed: ${validationFunctions.error.message}`,
-        instancePath: '',
-        schemaPath: ''
-      }],
-      schemaError: validationFunctions.error.message
-    };
-  }
-
   try {
-    const isValid = validationFunctions.validateTasksFileSchema(tasksFileObject);
+    TasksFileSchema.parse(tasksFileObject);
     return {
-      isValid,
-      errors: isValid ? null : validationFunctions.validateTasksFileSchema.errors,
+      isValid: true,
+      errors: null
     };
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return {
+        isValid: false,
+        errors: convertZodErrorsToAjvFormat(error)
+      };
+    }
+    
     return {
       isValid: false,
       errors: [{
@@ -220,58 +181,25 @@ export function validateTasksFile(tasksFileObject) {
 
 /**
  * Validates an array of task objects.
- * Requires task.schema.json to be added to Ajv instance first (which is done above).
  * @param {object[]} tasksArray - The array of task objects to validate.
  * @returns {{ isValid: boolean, errors: object[] | null, schemaError?: string }} Validation result.
  */
 export function validateTasksArray(tasksArray) {
-  const validationFunctions = getValidationFunctions();
-  
-  if (!validationFunctions.success) {
-    return {
-      isValid: false,
-      errors: [{
-        keyword: 'schema-compilation',
-        message: `Schema compilation failed: ${validationFunctions.error.message}`,
-        instancePath: '',
-        schemaPath: ''
-      }],
-      schemaError: validationFunctions.error.message
-    };
-  }
-
   try {
-    // Define schema on the fly or pre-compile if used frequently
-    const schemaForArray = {
-      type: 'array',
-      items: { $ref: 'task.schema.json' }
+    const TasksArraySchema = z.array(TaskSchema);
+    TasksArraySchema.parse(tasksArray);
+    return {
+      isValid: true,
+      errors: null
     };
-    
-    const ajv = schemaCompilationState.ajv;
-    const validate = ajv.getSchema('task.schema.json') // Check if task schema is loaded
-      ? ajv.compile(schemaForArray)
-      : null;
-
-    if (!validate) {
-      // This case should ideally not happen if ajv.addSchema was successful
+  } catch (error) {
+    if (error instanceof z.ZodError) {
       return {
         isValid: false,
-        errors: [{ 
-          keyword: 'schema-reference',
-          message: "Task schema (task.schema.json) not loaded into Ajv.",
-          instancePath: '',
-          schemaPath: ''
-        }],
-        schemaError: "Task schema reference not found"
+        errors: convertZodErrorsToAjvFormat(error)
       };
     }
     
-    const isValid = validate(tasksArray);
-    return {
-      isValid,
-      errors: isValid ? null : validate.errors,
-    };
-  } catch (error) {
     return {
       isValid: false,
       errors: [{
@@ -286,15 +214,28 @@ export function validateTasksArray(tasksArray) {
 }
 
 /**
- * Formats a single Ajv error object into a user-friendly string.
- * @param {object} error - An Ajv error object.
+ * Formats a single validation error object into a user-friendly string.
+ * @param {object} error - A validation error object (from Zod or converted format).
  * @returns {string} A formatted error string.
  */
 export function formatAjvError(error) {
   const path = error.instancePath || 'root';
   let friendlyMessage = error.message;
   
-  if (error.keyword === 'required') {
+  // Handle Zod error codes
+  if (error.keyword === 'invalid_type') {
+    friendlyMessage = `expected ${error.expected}, received ${error.received}`;
+  } else if (error.keyword === 'invalid_enum_value') {
+    friendlyMessage = `value '${error.data}' is not one of allowed values: [${error.params?.allowedValues?.join(', ')}]`;
+  } else if (error.keyword === 'too_small') {
+    friendlyMessage = `value is too small (minimum: ${error.minimum})`;
+  } else if (error.keyword === 'too_big') {
+    friendlyMessage = `value is too big (maximum: ${error.maximum})`;
+  } else if (error.keyword === 'invalid_string') {
+    friendlyMessage = `invalid string format`;
+  } else if (error.keyword === 'invalid_date') {
+    friendlyMessage = `invalid date format`;
+  } else if (error.keyword === 'required') {
     friendlyMessage = `property '${error.params?.missingProperty}' is missing`;
   } else if (error.keyword === 'enum') {
     friendlyMessage = `value '${error.data}' is not one of allowed values: [${error.params?.allowedValues?.join(', ')}]`;
@@ -318,18 +259,17 @@ export function formatAjvError(error) {
  * @returns {Object} Initialization result with success status and error details
  */
 export function initializeValidationSchemas() {
-  return initializeSchemas();
+  // With Zod, schemas are always ready - no initialization needed
+  return { success: true, error: null };
 }
 
 /**
  * Resets the schema compilation state (useful for testing).
+ * No-op with Zod since there's no state to reset.
  */
 export function resetSchemaState() {
-  schemaCompilationState = {
-    isInitialized: false,
-    initializationError: null,
-    validateTaskSchema: null,
-    validateTasksFileSchema: null,
-    ajv: null
-  };
+  // No-op with Zod - schemas are stateless
 }
+
+// Export the schemas for direct use if needed
+export { TaskSchema, TasksFileSchema, TaskStatusSchema, TaskPrioritySchema };
