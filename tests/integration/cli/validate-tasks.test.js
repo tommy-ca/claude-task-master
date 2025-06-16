@@ -1,8 +1,13 @@
 import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 
-const TASK_MASTER_CLI = 'node ../../../../bin/task-master.js'; // Adjusted path relative to test file
+// Helper to get __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const TASK_MASTER_CLI = `node ${path.resolve(__dirname, '../../../bin/task-master.js')}`;
 
 // Helper function to construct fixture path
 const fixturePath = (filename) =>
@@ -11,7 +16,10 @@ const fixturePath = (filename) =>
 // Helper to run CLI command, capture output, and handle errors
 const runCLI = (args) => {
   try {
-    const output = execSync(`${TASK_MASTER_CLI} ${args}`, { encoding: 'utf8', stdio: 'pipe' });
+    const output = execSync(`${TASK_MASTER_CLI} ${args}`, { 
+      encoding: 'utf8', 
+      stdio: ['pipe', 'pipe', 'pipe'] // stdin, stdout, stderr
+    });
     return { stdout: output, stderr: '', exitCode: 0 };
   } catch (error) {
     // error.stdout and error.stderr are Buffers, convert to string
