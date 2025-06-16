@@ -1,4 +1,5 @@
 import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,13 +10,14 @@ const __dirname = path.dirname(__filename);
 
 // Load schemas
 // Adjust the path according to the actual location of schema files relative to this script
-const taskSchemaPath = path.resolve(__dirname, '../../../schemas/task.schema.json');
-const tasksFileSchemaPath = path.resolve(__dirname, '../../../schemas/tasks-file.schema.json');
+const taskSchemaPath = path.resolve(__dirname, '../../schemas/task.schema.json');
+const tasksFileSchemaPath = path.resolve(__dirname, '../../schemas/tasks-file.schema.json');
 
 const taskSchema = JSON.parse(fs.readFileSync(taskSchemaPath, 'utf-8'));
 const tasksFileSchema = JSON.parse(fs.readFileSync(tasksFileSchemaPath, 'utf-8'));
 
-const ajv = new Ajv({ allErrors: true });
+const ajv = new Ajv({ allErrors: true, verbose: true });
+addFormats(ajv);
 
 // Add task schema to Ajv instance to resolve $ref in tasksFileSchema
 ajv.addSchema(taskSchema, 'task.schema.json');

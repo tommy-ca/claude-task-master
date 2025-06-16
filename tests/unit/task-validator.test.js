@@ -221,21 +221,22 @@ describe('task-validator.js', () => {
       );
     });
 
-    test('should return isValid: false for file with additional top-level property', () => {
+    test('should return isValid: false for file with property missing required fields', () => {
       const tasksFile = {
         masterS: { // Adhering to ^.+$ pattern
           tasks: [createValidTask()],
           metadata: createValidMetadata(),
         },
-        unexpectedProperty: {}, // This should fail due to additionalProperties: false
+        unexpectedProperty: {}, // This matches ^.+$ pattern but lacks required tasks/metadata
       };
       const result = validateTasksFile(tasksFile);
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            keyword: 'additionalProperties',
-            params: { additionalProperty: 'unexpectedProperty' }
+            keyword: 'required',
+            instancePath: '/unexpectedProperty',
+            params: { missingProperty: 'tasks' }
           }),
         ])
       );
