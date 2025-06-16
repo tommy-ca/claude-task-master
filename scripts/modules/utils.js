@@ -7,6 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
 import dotenv from 'dotenv';
+import { validateTasksFile, formatAjvError } from './task-validator.js';
 // Import specific config getters needed here
 import { getLogLevel, getDebugFlag } from './config-manager.js';
 import * as gitUtils from './utils/git-utils.js';
@@ -250,6 +251,15 @@ function readJSON(filepath, projectRoot = null, tag = null) {
 		data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
 		if (isDebug) {
 			console.log(`Successfully read JSON from ${filepath}`);
+		}
+		// Validate tasks.json content after reading
+		if (filepath.endsWith('tasks.json') && typeof data === 'object' && data !== null) {
+			const { isValid, errors } = validateTasksFile(data);
+			if (!isValid) {
+				errors.forEach(error => {
+					log('warn', `Validation warning for ${filepath} - ${formatAjvError(error)}`);
+				});
+			}
 		}
 	} catch (err) {
 		if (isDebug) {
@@ -701,6 +711,18 @@ function writeJSON(filepath, data, projectRoot = null, tag = null) {
 					}
 				}
 				cleanData = finalCleanData;
+			}
+		}
+
+		// Validate tasks.json content before writing
+		if (filepath.endsWith('tasks.json')) {
+			const { isValid, errors } = validateTasksFile(cleanData);
+			if (!isValid) {
+				log('error', `Validation failed for ${filepath}. Not writing to disk.`);
+				errors.forEach(error => {
+					log('error', `- ${formatAjvError(error)}`);
+				});
+				throw new Error('Tasks file validation failed. Aborting write operation.');
 			}
 		}
 
