@@ -50,7 +50,7 @@ describe('task-validator.js with Zod', () => {
       expect(result.data).toBeNull();
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringMatching(/Path: title - Issue: Task title cannot be empty/),
+          expect.stringMatching(/Path: title - Issue: Required/), // Corrected: Zod default for undefined
         ])
       );
     });
@@ -95,7 +95,7 @@ describe('task-validator.js with Zod', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringMatching(/Path: dependencies.0 - Issue: Expected number, received nan/), // Zod's message for failed number parse
+          expect.stringMatching(/Path: dependencies.0 - Issue: Expected number, received string/), // Corrected: Zod reports actual received type
         ])
       );
     });
@@ -109,7 +109,7 @@ describe('task-validator.js with Zod', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringMatching(/Path: subtasks.0.title - Issue: Task title cannot be empty/),
+          expect.stringMatching(/Path: subtasks.0.title - Issue: Required/), // Corrected: Zod default for undefined
         ])
       );
     });
@@ -141,7 +141,7 @@ describe('task-validator.js with Zod', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.stringMatching(/Path: 0.title - Issue: Task title cannot be empty/),
+          expect.stringMatching(/Path: 0.title - Issue: Required/), // Corrected: Zod default for undefined
         ])
       );
     });

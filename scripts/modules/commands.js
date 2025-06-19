@@ -22,7 +22,7 @@ import {
 	detectCamelCaseFlags,
 	toKebabCase
 } from './utils.js';
-import { validateTasksFile, validateTasksArray, formatZodError } from '../task-validator.js';
+import { validateTasksFile, validateTasksArray, formatZodError } from './task-validator.js';
 import {
 	parsePRD,
 	updateTasks,
