@@ -18,6 +18,7 @@
         "title": "Task with no status",
         "description": "This task is invalid because status is missing.",
         "priority": "high", "dependencies": [], "details": "", "testStrategy": "", "subtasks": []
+        /* "status": "pending" */
       }
     ],
     "metadata": { "created": "2023-01-01T00:00:00Z", "updated": "2023-01-01T00:00:00Z", "description": "Tag with one invalid task" }

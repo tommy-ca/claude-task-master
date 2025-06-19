@@ -22,7 +22,7 @@ import {
 	detectCamelCaseFlags,
 	toKebabCase
 } from './utils.js';
-import { validateTasksFile, validateTasksArray, formatAjvError } from './task-validator.js';
+import { validateTasksFile, validateTasksArray, formatZodError } from '../task-validator.js';
 import {
 	parsePRD,
 	updateTasks,
@@ -3695,12 +3695,13 @@ Examples:
 				log('success', chalk.green(`Validation successful for ${validationTargetDescription}.`));
 			} else {
 				log('error', chalk.red(`Validation failed for ${validationTargetDescription}:`));
-				(result.errors || []).forEach(error => {
-					log('error', chalk.yellow(`  ${formatAjvError(error)}`));
-					if (error.schemaPath && getDebugFlag()) {
-						log('debug', chalk.gray(`    Schema: ${error.schemaPath}`));
-					}
+				// result.errors is now an array of formatted strings or null
+				(result.errors || []).forEach(formattedErrorString => {
+					log('error', chalk.yellow(`  ${formattedErrorString}`));
 				});
+				// The schemaPath detail is lost with pre-formatted errors,
+				// but formatZodError includes path and keyword which is usually enough.
+				// If more raw error details are needed for debug, the validator's raw output could be exposed.
 				process.exit(1);
 			}
 		});

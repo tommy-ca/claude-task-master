@@ -1,13 +1,8 @@
 import { execSync } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 
-// Helper to get __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const TASK_MASTER_CLI = `node ${path.resolve(__dirname, '../../../bin/task-master.js')}`;
+const TASK_MASTER_CLI = 'node ../../../../bin/task-master.js'; // Adjusted path relative to test file
 
 // Helper function to construct fixture path
 const fixturePath = (filename) =>
@@ -16,10 +11,7 @@ const fixturePath = (filename) =>
 // Helper to run CLI command, capture output, and handle errors
 const runCLI = (args) => {
   try {
-    const output = execSync(`${TASK_MASTER_CLI} ${args}`, { 
-      encoding: 'utf8', 
-      stdio: ['pipe', 'pipe', 'pipe'] // stdin, stdout, stderr
-    });
+    const output = execSync(`${TASK_MASTER_CLI} ${args}`, { encoding: 'utf8', stdio: 'pipe' });
     return { stdout: output, stderr: '', exitCode: 0 };
   } catch (error) {
     // error.stdout and error.stderr are Buffers, convert to string
@@ -48,7 +40,8 @@ describe('CLI command: validate-tasks', () => {
   test('should fail with specific error for invalid task field', () => {
     const { stdout, stderr, exitCode } = runCLI(`validate-tasks --file ${invalidTaskFieldFile}`);
     expect(stdout).toMatch(/Validation failed/i);
-    expect(stdout).toMatch(/Path: \/mainS\/tasks\/0\/status - Issue: value 'invalid_status_value' is not one of allowed values/i);
+    // Updated to Zod error format
+    expect(stdout).toMatch(/Path: mainS.tasks.0.status - Issue: Invalid enum value. Expected 'pending' | 'in-progress' | 'done' | 'review' | 'deferred' | 'cancelled', received 'invalid_status_value'/i);
     expect(exitCode).toBe(1);
   });
 
@@ -56,7 +49,8 @@ describe('CLI command: validate-tasks', () => {
   test('should fail with specific error for invalid file structure', () => {
     const { stdout, stderr, exitCode } = runCLI(`validate-tasks --file ${invalidFileStructureFile}`);
     expect(stdout).toMatch(/Validation failed/i);
-    expect(stdout).toMatch(/Path: \/brokenTagS - Issue: property 'metadata' is missing/i);
+    // Updated to Zod error format
+    expect(stdout).toMatch(/Path: brokenTagS.metadata - Issue: Required/i);
     expect(exitCode).toBe(1);
   });
 
@@ -66,8 +60,8 @@ describe('CLI command: validate-tasks', () => {
       `validate-tasks --file ${tasksForTagValidationFile} --tag validTagWithInvalidTaskS`
     );
     expect(stdout).toMatch(/Validation failed for tasks for tag 'validTagWithInvalidTaskS'/i);
-    // The error path will be relative to the array being validated
-    expect(stdout).toMatch(/Path: \/0 - Issue: property 'status' is missing/i);
+    // Updated to Zod error format - path is relative to the array
+    expect(stdout).toMatch(/Path: 0.status - Issue: Required/i);
     expect(exitCode).toBe(1);
   });
 

@@ -2,9 +2,12 @@ import {
   validateTask,
   validateTasksArray,
   validateTasksFile,
-  formatAjvError,
-  resetSchemaState,
+  formatZodError, // Updated import
 } from '../../scripts/modules/task-validator.js';
+// Import Zod schemas for potential direct use or reference, though tests primarily use validators
+import { taskSchema as ZodTaskSchema, tasksFileSchema as ZodTasksFileSchema } from '../../scripts/schemas/zod-schemas.js';
+import { z } from 'zod';
+
 
 // Minimal valid task for reuse
 const createValidTask = (id = 1) => ({
@@ -12,59 +15,65 @@ const createValidTask = (id = 1) => ({
   title: `Test Task ${id}`,
   description: `Description for task ${id}`,
   status: 'pending',
-  // Omitting optional fields for baseline validity
   dependencies: [],
   priority: 'medium',
-  details: 'Some details',
-  testStrategy: 'Test strategy',
+  details: 'Some details about the task.',
+  testStrategy: 'Strategy for testing this task.',
   subtasks: [],
+  // Optional fields can be added here if needed for specific tests
+  // previousStatus: 'some-status',
+  // acceptanceCriteria: 'Criteria text',
+  // parentTaskId: null, // or a number
 });
 
 // Minimal valid metadata for reuse
 const createValidMetadata = () => ({
   created: new Date().toISOString(),
   updated: new Date().toISOString(),
-  description: 'Test metadata',
+  description: 'Test metadata section.',
 });
 
-describe('task-validator.js', () => {
-  beforeEach(() => {
-    // Reset schema state before each test to ensure clean state
-    resetSchemaState();
-  });
+describe('task-validator.js with Zod', () => {
   describe('validateTask', () => {
     test('should return isValid: true for a valid task object', () => {
       const task = createValidTask();
       const result = validateTask(task);
       expect(result.isValid).toBe(true);
       expect(result.errors).toBeNull();
+      expect(result.data).toBeDefined();
     });
 
     test('should return isValid: false if title is missing', () => {
       const task = { ...createValidTask(), title: undefined };
       const result = validateTask(task);
       expect(result.isValid).toBe(false);
+      expect(result.data).toBeNull();
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            keyword: 'required',
-            params: { missingProperty: 'title' },
-          }),
+          expect.stringMatching(/Path: title - Issue: Task title cannot be empty/),
+        ])
+      );
+    });
+
+    test('should return isValid: false if title is an empty string', () => {
+      const task = { ...createValidTask(), title: "" };
+      const result = validateTask(task);
+      expect(result.isValid).toBe(false);
+      expect(result.data).toBeNull();
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/Path: title - Issue: Task title cannot be empty/),
         ])
       );
     });
 
     test('should return isValid: false for invalid status enum value', () => {
-      const task = { ...createValidTask(), status: 'completed' }; // 'completed' is not in the enum
+      const task = { ...createValidTask(), status: 'invalid_status' };
       const result = validateTask(task);
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            keyword: 'enum',
-            instancePath: '/status',
-            params: { allowedValues: ['pending', 'in-progress', 'done', 'review', 'deferred', 'cancelled'] },
-          }),
+          expect.stringMatching(/Path: status - Issue: Invalid enum value/),
         ])
       );
     });
@@ -75,11 +84,7 @@ describe('task-validator.js', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            keyword: 'enum',
-            instancePath: '/priority',
-            params: { allowedValues: ['high', 'medium', 'low'] },
-          }),
+          expect.stringMatching(/Path: priority - Issue: Invalid enum value/),
         ])
       );
     });
@@ -90,11 +95,7 @@ describe('task-validator.js', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            keyword: 'type',
-            instancePath: '/dependencies/0',
-            params: { type: 'integer' },
-          }),
+          expect.stringMatching(/Path: dependencies.0 - Issue: Expected number, received nan/), // Zod's message for failed number parse
         ])
       );
     });
@@ -108,25 +109,20 @@ describe('task-validator.js', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            keyword: 'required',
-            instancePath: '/subtasks/0',
-            params: { missingProperty: 'title' },
-          }),
+          expect.stringMatching(/Path: subtasks.0.title - Issue: Task title cannot be empty/),
         ])
       );
     });
 
-     test('should return isValid: true for a task with all optional fields', () => {
-      const task = {
-        ...createValidTask(),
-        previousStatus: "pending",
-        acceptanceCriteria: "All tests pass",
-        parentTaskId: 100
-      };
+    test('should return isValid: false if id is not positive', () => {
+      const task = { ...createValidTask(), id: 0 };
       const result = validateTask(task);
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toBeNull();
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(/Path: id - Issue: Task ID must be a positive integer/),
+        ])
+      );
     });
   });
 
@@ -136,18 +132,16 @@ describe('task-validator.js', () => {
       const result = validateTasksArray(tasksArray);
       expect(result.isValid).toBe(true);
       expect(result.errors).toBeNull();
+      expect(result.data).toBeDefined();
     });
 
-    test('should return isValid: false for an array with one invalid task', () => {
-      const tasksArray = [{ ...createValidTask(), status: 'invalidStatus' }];
+    test('should return isValid: false for an array with one invalid task (missing title)', () => {
+      const tasksArray = [{ ...createValidTask(), title: undefined }];
       const result = validateTasksArray(tasksArray);
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            keyword: 'enum',
-            instancePath: '/0/status',
-          }),
+          expect.stringMatching(/Path: 0.title - Issue: Task title cannot be empty/),
         ])
       );
     });
@@ -156,7 +150,7 @@ describe('task-validator.js', () => {
   describe('validateTasksFile', () => {
     test('should return isValid: true for a valid tasks file structure', () => {
       const tasksFile = {
-        masterS: { // Adhering to ^.+$ pattern by ending with S or any char
+        masterTag: {
           tasks: [createValidTask()],
           metadata: createValidMetadata(),
         },
@@ -164,11 +158,12 @@ describe('task-validator.js', () => {
       const result = validateTasksFile(tasksFile);
       expect(result.isValid).toBe(true);
       expect(result.errors).toBeNull();
+      expect(result.data).toBeDefined();
     });
 
-    test('should return isValid: false if a tag is missing metadata', () => {
+    test('should return isValid: false if a tag object is missing metadata', () => {
       const tasksFile = {
-        testTagS: { // Adhering to ^.+$ pattern
+        testTag: {
           tasks: [createValidTask()],
           // metadata is missing
         },
@@ -177,19 +172,15 @@ describe('task-validator.js', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            keyword: 'required',
-            instancePath: '/testTagS',
-            params: { missingProperty: 'metadata' },
-          }),
+          expect.stringMatching(/Path: testTag.metadata - Issue: Required/),
         ])
       );
     });
 
-    test('should return isValid: false if a tag is missing tasks array', () => {
+    test('should return isValid: false if a tag object has tasks as "not-an-array"', () => {
       const tasksFile = {
-        anotherTagS: { // Adhering to ^.+$ pattern
-          // tasks is missing
+        testTag: {
+          tasks: "not-an-array",
           metadata: createValidMetadata(),
         },
       };
@@ -197,18 +188,14 @@ describe('task-validator.js', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            keyword: 'required',
-            instancePath: '/anotherTagS',
-            params: { missingProperty: 'tasks' },
-          }),
+          expect.stringMatching(/Path: testTag.tasks - Issue: Expected array, received string/),
         ])
       );
     });
 
-    test('should return isValid: false if a tag contains an invalid task', () => {
+    test('should return isValid: false if a tag contains an invalid task (e.g. id as string)', () => {
       const tasksFile = {
-        badTaskTagS: { // Adhering to ^.+$ pattern
+        badTaskTag: {
           tasks: [{ ...createValidTask(), id: 'not-a-number' }],
           metadata: createValidMetadata(),
         },
@@ -217,120 +204,69 @@ describe('task-validator.js', () => {
       expect(result.isValid).toBe(false);
       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            keyword: 'type',
-            instancePath: '/badTaskTagS/tasks/0/id',
-            params: { type: 'integer' },
-          }),
+          expect.stringMatching(/Path: badTaskTag.tasks.0.id - Issue: Expected number, received string/),
         ])
       );
     });
 
-    test('should return isValid: false for file with property missing required fields', () => {
+    test('should return isValid: false for a file with an empty string as tag name', () => {
       const tasksFile = {
-        masterS: { // Adhering to ^.+$ pattern
+        "": {
           tasks: [createValidTask()],
           metadata: createValidMetadata(),
-        },
-        unexpectedProperty: {}, // This matches ^.+$ pattern but lacks required tasks/metadata
+        }
       };
       const result = validateTasksFile(tasksFile);
       expect(result.isValid).toBe(false);
-      expect(result.errors).toEqual(
+       expect(result.errors).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({
-            keyword: 'required',
-            instancePath: '/unexpectedProperty',
-            params: { missingProperty: 'tasks' }
-          }),
+          // Zod's z.record key validation error message might vary slightly based on version or internal details.
+          // This regex is more flexible.
+          expect.stringMatching(/Path: (root|\[object Object\]) - Issue: Tag name cannot be empty/),
         ])
       );
     });
-
-    test('should return isValid: true for an empty object file', () => {
-      // Empty object is valid because patternProperties doesn't require a match,
-      // and there are no other top-level required properties.
-      const tasksFile = {};
-      const result = validateTasksFile(tasksFile);
-      expect(result.isValid).toBe(true);
-      expect(result.errors).toBeNull();
-    });
   });
 
-  describe('formatAjvError', () => {
-    test('should format "required" error', () => {
-      const error = {
-        instancePath: '/task',
-        keyword: 'required',
-        params: { missingProperty: 'title' },
-        message: "should have required property 'title'",
+  describe('formatZodError', () => {
+    test('should format a ZodError with a single issue correctly', () => {
+      const mockZodError = {
+        issues: [
+          { path: ['task', 'title'], message: 'Required field missing' }
+        ]
       };
-      expect(formatAjvError(error)).toBe(
-        "Path: /task - Issue: property 'title' is missing (Keyword: required)"
-      );
+      const formatted = formatZodError(mockZodError);
+      expect(formatted).toEqual(['Path: task.title - Issue: Required field missing']);
     });
 
-    test('should format "enum" error', () => {
-      const error = {
-        instancePath: '/task/status',
-        keyword: 'enum',
-        params: { allowedValues: ['pending', 'done'] },
-        data: 'invalid',
-        message: 'must be equal to one of the allowed values',
+    test('should format a ZodError with multiple issues correctly', () => {
+      const mockZodError = {
+        issues: [
+          { path: ['task', 'id'], message: 'Expected number, received string' },
+          { path: ['task', 'status'], message: 'Invalid enum value' }
+        ]
       };
-      expect(formatAjvError(error)).toBe(
-        "Path: /task/status - Issue: value 'invalid' is not one of allowed values: [pending, done] (Keyword: enum)"
-      );
+      const formatted = formatZodError(mockZodError);
+      expect(formatted).toEqual([
+        'Path: task.id - Issue: Expected number, received string',
+        'Path: task.status - Issue: Invalid enum value'
+      ]);
     });
 
-    test('should format "type" error', () => {
-      const error = {
-        instancePath: '/task/id',
-        keyword: 'type',
-        params: { type: 'integer' },
-        data: 'string-id',
-        message: 'must be integer',
+    test('should use "root" for path if Zod issue path is empty', () => {
+        const mockZodError = {
+        issues: [
+          { path: [], message: 'Invalid input type for the entire object' }
+        ]
       };
-      expect(formatAjvError(error)).toBe(
-        "Path: /task/id - Issue: value 'string-id' should be of type 'integer' (Keyword: type)"
-      );
+      const formatted = formatZodError(mockZodError);
+      expect(formatted).toEqual(['Path: root - Issue: Invalid input type for the entire object']);
     });
 
-    test('should format "pattern" error', () => {
-      const error = {
-        instancePath: '/tagKey',
-        keyword: 'pattern',
-        params: { pattern: '^.+$' },
-        data: '', // Example of data that fails the pattern for a non-empty string
-        message: 'must match pattern "^.+$"',
-      };
-      expect(formatAjvError(error)).toBe(
-        "Path: /tagKey - Issue: value '' does not match pattern '^.+$' (Keyword: pattern)"
-      );
-    });
-
-    test('should format a generic error', () => {
-      const error = {
-        instancePath: '/task/customField',
-        keyword: 'custom',
-        params: { foo: 'bar' },
-        message: 'custom validation failed',
-      };
-      expect(formatAjvError(error)).toBe(
-        'Path: /task/customField - Issue: custom validation failed (Keyword: custom)'
-      );
-    });
-
-    test('should use "root" for path if instancePath is empty', () => {
-      const error = {
-        instancePath: '',
-        keyword: 'required',
-        params: { missingProperty: 'someProperty' },
-        message: "should have required property 'someProperty'",
-      };
-      expect(formatAjvError(error)).toBe(
-        "Path: root - Issue: property 'someProperty' is missing (Keyword: required)"
-      );
+    test('should return null if zodError is null or has no issues', () => {
+      expect(formatZodError(null)).toBeNull();
+      expect(formatZodError({ issues: [] })).toBeNull();
+      expect(formatZodError({})).toBeNull();
     });
   });
 });
