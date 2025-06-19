@@ -35,12 +35,12 @@ const runCLI = (args = []) => { // Added default empty array for args
     stdout = execSync(command, {
       encoding: 'utf8',
       stdio: 'pipe',
-      cwd: PROJECT_ROOT,
-      env: {
-        ...process.env,
-        TASKMASTER_DEBUG: 'true', // Ensure debug flag is true
-        TASKMASTER_LOG_LEVEL: 'debug' // Ensure log level is debug
-      }
+      cwd: PROJECT_ROOT
+      // env: { // Debug settings removed
+      //   ...process.env,
+      //   TASKMASTER_DEBUG: 'true',
+      //   TASKMASTER_LOG_LEVEL: 'debug'
+      // }
     });
   } catch (error) {
     // console.log('--- RAW STDOUT (from catch) ---', error.stdout); // Cleaned up
