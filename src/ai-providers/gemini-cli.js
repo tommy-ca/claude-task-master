@@ -56,22 +56,14 @@ export class GeminiCliProvider extends BaseAIProvider {
 		try {
 			// Load the Gemini CLI module dynamically
 			await loadGeminiCliModule();
-			// Primary use case: Use existing gemini CLI authentication
-			// Secondary use case: Direct API key (for compatibility)
-			let authOptions = {};
+
+			const authOptions = {
+				authType: 'oauth-personal'
+			};
 
 			if (params.apiKey && params.apiKey !== 'gemini-cli-no-key-required') {
-				// API key provided - use it for compatibility
-				authOptions = {
-					authType: 'api-key',
-					apiKey: params.apiKey
-				};
-			} else {
-				// Expected case: Use gemini CLI authentication
-				// Requires: gemini auth login (pre-configured)
-				authOptions = {
-					authType: 'oauth-personal'
-				};
+				authOptions.authType = 'api-key';
+				authOptions.apiKey = params.apiKey;
 			}
 
 			// Add baseURL if provided (for custom endpoints)
