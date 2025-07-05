@@ -106,6 +106,72 @@ Task Master provides manual git integration through the `--from-branch` option:
 - **User Control**: No automatic tag switching - you control when and how tags are created
 - **Flexible Workflow**: Supports any git workflow without imposing rigid branch-tag mappings
 
+### Git and GPG Configuration
+
+#### GPG Commit Signing Setup
+
+If you encounter GPG signing issues when committing (especially in CI/CD environments or containers), configure Git to use GPG without TTY access:
+
+```bash
+# Configure Git to use GPG without TTY (fixes /dev/tty access errors)
+git config --global gpg.program "gpg --no-tty"
+
+# Enable commit signing globally
+git config --global commit.gpgsign true
+
+# Set your GPG signing key (replace with your key ID)
+git config --global user.signingkey YOUR_GPG_KEY_ID
+```
+
+#### Generating a GPG Key for GitHub
+
+1. **Generate a new GPG key**:
+   ```bash
+   gpg --full-generate-key
+   ```
+   - Choose RSA and RSA (default)
+   - Use 4096 bits for maximum security
+   - Set expiration as desired (0 = never expires)
+   - Enter your name and email (must match GitHub account)
+
+2. **List your GPG keys**:
+   ```bash
+   gpg --list-secret-keys --keyid-format=long
+   ```
+
+3. **Export your public key**:
+   ```bash
+   gpg --armor --export YOUR_GPG_KEY_ID
+   ```
+
+4. **Add the public key to GitHub**:
+   - Go to GitHub Settings > SSH and GPG keys
+   - Click "New GPG key"
+   - Paste your public key
+
+#### Common GPG Issues and Solutions
+
+**Issue**: `gpg: cannot open '/dev/tty': No such device or address`
+```bash
+# Solution: Configure GPG to not use TTY
+git config --global gpg.program "gpg --no-tty"
+```
+
+**Issue**: `error: gpg failed to sign the data`
+```bash
+# Solution: Check GPG key configuration
+git config --global user.signingkey
+gpg --list-secret-keys
+
+# Temporarily disable signing if needed
+git config --global commit.gpgsign false
+```
+
+**Issue**: Commits not showing as verified on GitHub
+- Ensure your Git email matches your GitHub account email
+- Verify your GPG key is added to your GitHub account
+- Check that your key hasn't expired
+
 ## State Management File
 
 Taskmaster uses `.taskmaster/state.json` to track tagged system runtime information:
