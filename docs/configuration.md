@@ -113,14 +113,18 @@ Task Master provides manual git integration through the `--from-branch` option:
 If you encounter GPG signing issues when committing (especially in CI/CD environments or containers), configure Git to use GPG without TTY access:
 
 ```bash
-# Configure Git to use GPG without TTY (fixes /dev/tty access errors)
-git config --global gpg.program "gpg --no-tty"
+# Configure Git to use GPG without TTY and in non-interactive mode
+git config --global gpg.program "/usr/bin/gpg --pinentry-mode loopback --no-tty"
 
 # Enable commit signing globally
 git config --global commit.gpgsign true
 
 # Set your GPG signing key (replace with your key ID)
 git config --global user.signingkey YOUR_GPG_KEY_ID
+
+# Configure GPG for non-interactive environments (CI/CD)
+echo "use-agent" > ~/.gnupg/gpg.conf
+echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
 ```
 
 #### Generating a GPG Key for GitHub
@@ -153,18 +157,34 @@ git config --global user.signingkey YOUR_GPG_KEY_ID
 
 **Issue**: `gpg: cannot open '/dev/tty': No such device or address`
 ```bash
-# Solution: Configure GPG to not use TTY
-git config --global gpg.program "gpg --no-tty"
+# Solution: Configure GPG for non-interactive mode
+git config --global gpg.program "/usr/bin/gpg --pinentry-mode loopback --no-tty"
+echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
 ```
 
-**Issue**: `error: gpg failed to sign the data`
+**Issue**: `error: gpg failed to sign the data` or `gpg: Sorry, no terminal at all requested`
 ```bash
-# Solution: Check GPG key configuration
+# Solution: Configure GPG for automated environments
+echo "use-agent" > ~/.gnupg/gpg.conf
+echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+git config --global gpg.program "/usr/bin/gpg --pinentry-mode loopback --no-tty"
+
+# Check GPG key configuration
 git config --global user.signingkey
 gpg --list-secret-keys
 
 # Temporarily disable signing if needed
 git config --global commit.gpgsign false
+```
+
+**Issue**: Previous commits not signed but new ones should be
+```bash
+# Verify current configuration
+git config --global --list | grep -E "(gpg|sign)"
+
+# Test signing works
+git log --pretty="format:%H %G? %GS %s" -1
+# Look for 'G' (good signature) instead of 'N' (no signature)
 ```
 
 **Issue**: Commits not showing as verified on GitHub
