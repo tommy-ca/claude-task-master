@@ -1,14 +1,27 @@
 {
-  "tasks": [
-    {
-      "id": 1,
-      "dependencies": [],
-      "subtasks": [
-        {
-          "id": 1,
-          "dependencies": []
-        }
-      ]
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Test Task",
+        "description": "Test task description",
+        "status": "pending",
+        "dependencies": [],
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Test Subtask",
+            "description": "Test subtask description", 
+            "status": "pending",
+            "dependencies": []
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2023-01-01T00:00:00.000Z",
+      "updated": "2023-01-01T00:00:00.000Z",
+      "description": "Test tasks fixture"
     }
-  ]
+  }
 }
