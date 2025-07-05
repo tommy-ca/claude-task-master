@@ -123,8 +123,15 @@ git config --global commit.gpgsign true
 git config --global user.signingkey YOUR_GPG_KEY_ID
 
 # Configure GPG for non-interactive environments (CI/CD)
+mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
 echo "use-agent" > ~/.gnupg/gpg.conf
 echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+echo "allow-loopback-pinentry" > ~/.gnupg/gpg-agent.conf
+chmod 600 ~/.gnupg/gpg.conf ~/.gnupg/gpg-agent.conf
+
+# Restart GPG agent to apply new configuration
+gpgconf --kill gpg-agent
+gpgconf --launch gpg-agent
 ```
 
 #### Generating a GPG Key for GitHub
@@ -137,6 +144,7 @@ echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
    - Use 4096 bits for maximum security
    - Set expiration as desired (0 = never expires)
    - Enter your name and email (must match GitHub account)
+   - **For CI/CD environments**: Consider using no passphrase or set up automated passphrase handling
 
 2. **List your GPG keys**:
    ```bash
@@ -165,15 +173,22 @@ echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
 **Issue**: `error: gpg failed to sign the data` or `gpg: Sorry, no terminal at all requested`
 ```bash
 # Solution: Configure GPG for automated environments
+mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
 echo "use-agent" > ~/.gnupg/gpg.conf
 echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
-git config --global gpg.program "/usr/bin/gpg --pinentry-mode loopback --no-tty"
+echo "allow-loopback-pinentry" > ~/.gnupg/gpg-agent.conf
+chmod 600 ~/.gnupg/gpg.conf ~/.gnupg/gpg-agent.conf
+gpgconf --kill gpg-agent
+git config --global gpg.program "/usr/bin/gpg --pinentry-mode loopback --no-tty --batch --yes"
 
 # Check GPG key configuration
 git config --global user.signingkey
 gpg --list-secret-keys
 
-# Temporarily disable signing if needed
+# For passphrase-protected keys in automation, consider:
+# 1. Using keys without passphrases for CI/CD
+# 2. Setting up credential caching
+# 3. Temporarily disable signing if needed
 git config --global commit.gpgsign false
 ```
 
