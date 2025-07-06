@@ -106,6 +106,107 @@ Task Master provides manual git integration through the `--from-branch` option:
 - **User Control**: No automatic tag switching - you control when and how tags are created
 - **Flexible Workflow**: Supports any git workflow without imposing rigid branch-tag mappings
 
+### Git and GPG Configuration
+
+#### GPG Commit Signing Setup
+
+If you encounter GPG signing issues when committing (especially in CI/CD environments or containers), configure Git to use GPG without TTY access:
+
+```bash
+# Configure Git to use GPG without TTY and in non-interactive mode
+git config --global gpg.program "/usr/bin/gpg --pinentry-mode loopback --no-tty"
+
+# Enable commit signing globally
+git config --global commit.gpgsign true
+
+# Set your GPG signing key (replace with your key ID)
+git config --global user.signingkey YOUR_GPG_KEY_ID
+
+# Configure GPG for non-interactive environments (CI/CD)
+mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+echo "use-agent" > ~/.gnupg/gpg.conf
+echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+echo "allow-loopback-pinentry" > ~/.gnupg/gpg-agent.conf
+chmod 600 ~/.gnupg/gpg.conf ~/.gnupg/gpg-agent.conf
+
+# Restart GPG agent to apply new configuration
+gpgconf --kill gpg-agent
+gpgconf --launch gpg-agent
+```
+
+#### Generating a GPG Key for GitHub
+
+1. **Generate a new GPG key**:
+   ```bash
+   gpg --full-generate-key
+   ```
+   - Choose RSA and RSA (default)
+   - Use 4096 bits for maximum security
+   - Set expiration as desired (0 = never expires)
+   - Enter your name and email (must match GitHub account)
+   - **For CI/CD environments**: Consider using no passphrase or set up automated passphrase handling
+
+2. **List your GPG keys**:
+   ```bash
+   gpg --list-secret-keys --keyid-format=long
+   ```
+
+3. **Export your public key**:
+   ```bash
+   gpg --armor --export YOUR_GPG_KEY_ID
+   ```
+
+4. **Add the public key to GitHub**:
+   - Go to GitHub Settings > SSH and GPG keys
+   - Click "New GPG key"
+   - Paste your public key
+
+#### Common GPG Issues and Solutions
+
+**Issue**: `gpg: cannot open '/dev/tty': No such device or address`
+```bash
+# Solution: Configure GPG for non-interactive mode
+git config --global gpg.program "/usr/bin/gpg --pinentry-mode loopback --no-tty"
+echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+```
+
+**Issue**: `error: gpg failed to sign the data` or `gpg: Sorry, no terminal at all requested`
+```bash
+# Solution: Configure GPG for automated environments
+mkdir -p ~/.gnupg && chmod 700 ~/.gnupg
+echo "use-agent" > ~/.gnupg/gpg.conf
+echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+echo "allow-loopback-pinentry" > ~/.gnupg/gpg-agent.conf
+chmod 600 ~/.gnupg/gpg.conf ~/.gnupg/gpg-agent.conf
+gpgconf --kill gpg-agent
+git config --global gpg.program "/usr/bin/gpg --pinentry-mode loopback --no-tty --batch --yes"
+
+# Check GPG key configuration
+git config --global user.signingkey
+gpg --list-secret-keys
+
+# For passphrase-protected keys in automation, consider:
+# 1. Using keys without passphrases for CI/CD
+# 2. Setting up credential caching
+# 3. Temporarily disable signing if needed
+git config --global commit.gpgsign false
+```
+
+**Issue**: Previous commits not signed but new ones should be
+```bash
+# Verify current configuration
+git config --global --list | grep -E "(gpg|sign)"
+
+# Test signing works
+git log --pretty="format:%H %G? %GS %s" -1
+# Look for 'G' (good signature) instead of 'N' (no signature)
+```
+
+**Issue**: Commits not showing as verified on GitHub
+- Ensure your Git email matches your GitHub account email
+- Verify your GPG key is added to your GitHub account
+- Check that your key hasn't expired
+
 ## State Management File
 
 Taskmaster uses `.taskmaster/state.json` to track tagged system runtime information:

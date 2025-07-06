@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tasks File",
+  "description": "Schema for the tasks.json file",
+  "type": "object",
+  "patternProperties": {
+    "^.+$": {
+      "type": "object",
+      "properties": {
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "task.schema.json"
+          }
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "created": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "updated": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": ["created", "updated", "description"]
+        }
+      },
+      "required": ["tasks", "metadata"]
+    }
+  },
+  "additionalProperties": false
+}

@@ -27,6 +27,7 @@ import { generateTextService } from '../ai-services-unified.js';
 import { getDebugFlag, isApiKeySet } from '../config-manager.js';
 import { ContextGatherer } from '../utils/contextGatherer.js';
 import { FuzzyTaskSearch } from '../utils/fuzzyTaskSearch.js';
+import { validateTask, formatAjvError } from '../task-validator.js';
 
 // Zod schema for post-parsing validation of the updated task object
 const updatedTaskSchema = z
@@ -527,6 +528,16 @@ The changes described in the prompt should be thoughtfully applied to make the t
 					}
 				}
 
+				// Validate task after appending details
+				const { isValid, errors: taskErrors } = validateTask(taskToUpdate);
+				if (!isValid) {
+					report('Error: Task became invalid after appending details.', 'error');
+					taskErrors.forEach(error => {
+						report(`- ${formatAjvError(error)}`, 'error');
+					});
+					throw new Error('Task validation failed after appending details.');
+				}
+
 				// Write the updated task back to file
 				data.tasks[taskIndex] = taskToUpdate;
 				writeJSON(tasksPath, data, projectRoot, currentTag);
@@ -670,6 +681,15 @@ The changes described in the prompt should be thoughtfully applied to make the t
 			// --- End Task Validation/Correction ---
 
 			// --- Update Task Data (Keep existing) ---
+			// Validate before assigning to data
+			const { isValid: isUpdatedTaskValid, errors: updatedTaskErrors } = validateTask(updatedTask);
+			if (!isUpdatedTaskValid) {
+				report('Error: Attempted to update with an invalid task structure.', 'error');
+				updatedTaskErrors.forEach(error => {
+					report(`- ${formatAjvError(error)}`, 'error');
+				});
+				throw new Error('Updated task validation failed.');
+			}
 			data.tasks[taskIndex] = updatedTask;
 			// --- End Update Task Data ---
 

@@ -17,9 +17,10 @@ const TASKS_PATH = path.join(TEMP_DIR, 'tasks.json');
 function writeInitialFile() {
 	const initialData = {
 		master: {
-			tasks: [{ id: 1, title: 'Initial Task', status: 'pending' }],
+			tasks: [{ id: 1, title: 'Initial Task', description: 'Initial test task', status: 'pending' }],
 			metadata: {
 				created: new Date().toISOString(),
+				updated: new Date().toISOString(),
 				description: 'Master tag'
 			}
 		}

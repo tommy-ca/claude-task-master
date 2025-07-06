@@ -7,17 +7,37 @@ import fs from 'fs';
 import path from 'path';
 import chalk from 'chalk';
 import dotenv from 'dotenv';
+import { validateTasksFile, formatAjvError } from './task-validator.js';
 // Import specific config getters needed here
 import { getLogLevel, getDebugFlag } from './config-manager.js';
 import * as gitUtils from './utils/git-utils.js';
 import {
 	COMPLEXITY_REPORT_FILE,
 	LEGACY_COMPLEXITY_REPORT_FILE,
-	LEGACY_CONFIG_FILE
+	LEGACY_CONFIG_FILE,
+	TASKMASTER_TASKS_FILE,
+	LEGACY_TASKS_FILE
 } from '../../src/constants/paths.js';
 
 // Global silent mode flag
 let silentMode = false;
+
+/**
+ * Checks if a file path represents a tasks file based on known patterns
+ * @param {string} filepath - The file path to check
+ * @returns {boolean} - True if the file is a tasks file
+ */
+function isTasksFile(filepath) {
+	if (!filepath) return false;
+	
+	// Normalize the path for comparison
+	const normalizedPath = path.normalize(filepath);
+	
+	// Check if it ends with the standard tasks file patterns
+	return normalizedPath.endsWith(TASKMASTER_TASKS_FILE) || 
+	       normalizedPath.endsWith(LEGACY_TASKS_FILE) ||
+	       normalizedPath.endsWith('tasks.json');
+}
 
 // --- Environment Variable Resolution Utility ---
 /**
@@ -295,6 +315,15 @@ function readJSON(filepath, projectRoot = null, tag = null) {
 		data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
 		if (isDebug) {
 			console.log(`Successfully read JSON from ${filepath}`);
+		}
+		// Validate tasks file content after reading
+		if (isTasksFile(filepath) && typeof data === 'object' && data !== null) {
+			const { isValid, errors } = validateTasksFile(data);
+			if (!isValid) {
+				errors.forEach(error => {
+					log('warn', `Validation warning for ${filepath} - ${formatAjvError(error)}`);
+				});
+			}
 		}
 	} catch (err) {
 		if (isDebug) {
@@ -746,6 +775,18 @@ function writeJSON(filepath, data, projectRoot = null, tag = null) {
 					}
 				}
 				cleanData = finalCleanData;
+			}
+		}
+
+		// Validate tasks.json content before writing
+		if (filepath.endsWith('tasks.json')) {
+			const { isValid, errors } = validateTasksFile(cleanData);
+			if (!isValid) {
+				log('error', `Validation failed for ${filepath}. Not writing to disk.`);
+				errors.forEach(error => {
+					log('error', `- ${formatAjvError(error)}`);
+				});
+				throw new Error('Tasks file validation failed. Aborting write operation.');
 			}
 		}
 
