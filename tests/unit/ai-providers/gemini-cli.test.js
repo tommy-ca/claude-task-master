@@ -106,7 +106,7 @@ describe('GeminiCliProvider', () => {
 			expect(client).toBeDefined();
 			expect(typeof client).toBe('function');
 			expect(createGeminiProvider).toHaveBeenCalledWith({
-				authType: 'api-key',
+				authType: 'gemini-api-key',
 				apiKey: 'test-api-key'
 			});
 		});
@@ -129,7 +129,7 @@ describe('GeminiCliProvider', () => {
 
 			expect(client).toBeDefined();
 			expect(createGeminiProvider).toHaveBeenCalledWith({
-				authType: 'api-key',
+				authType: 'gemini-api-key',
 				apiKey: 'test-key',
 				baseURL: 'https://custom-endpoint.com'
 			});
@@ -423,7 +423,7 @@ describe('GeminiCliProvider', () => {
 				model: expect.objectContaining({
 					id: 'gemini-2.0-flash-exp',
 					authOptions: expect.objectContaining({
-						authType: 'api-key',
+						authType: 'gemini-api-key',
 						apiKey: 'test-key'
 					})
 				}),
@@ -621,11 +621,11 @@ describe('GeminiCliProvider', () => {
 	// since dynamic imports are difficult to mock properly in unit tests
 
 	describe('authentication scenarios', () => {
-		it('should use api-key auth type with API key', async () => {
+		it('should use gemini-api-key auth type with API key', async () => {
 			await provider.getClient({ apiKey: 'gemini-test-key' });
 
 			expect(createGeminiProvider).toHaveBeenCalledWith({
-				authType: 'api-key',
+				authType: 'gemini-api-key',
 				apiKey: 'gemini-test-key'
 			});
 		});
