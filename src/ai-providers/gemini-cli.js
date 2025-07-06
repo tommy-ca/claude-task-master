@@ -10,6 +10,12 @@ import { parse } from 'jsonc-parser';
 import { BaseAIProvider } from './base-provider.js';
 import { log } from '../../scripts/modules/index.js';
 
+// Authentication type constants for Gemini CLI provider
+export const GEMINI_AUTH_TYPES = {
+	API_KEY: 'gemini-api-key',
+	OAUTH_PERSONAL: 'oauth-personal'
+};
+
 let createGeminiProvider;
 
 async function loadGeminiCliModule() {
@@ -63,14 +69,14 @@ export class GeminiCliProvider extends BaseAIProvider {
 			if (params.apiKey && params.apiKey !== 'gemini-cli-no-key-required') {
 				// API key provided - use it for compatibility
 				authOptions = {
-					authType: 'gemini-api-key',
+					authType: GEMINI_AUTH_TYPES.API_KEY,
 					apiKey: params.apiKey
 				};
 			} else {
 				// Expected case: Use gemini CLI authentication
 				// Requires: gemini auth login (pre-configured)
 				authOptions = {
-					authType: 'oauth-personal'
+					authType: GEMINI_AUTH_TYPES.OAUTH_PERSONAL
 				};
 			}
 

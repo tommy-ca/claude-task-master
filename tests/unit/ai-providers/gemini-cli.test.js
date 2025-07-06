@@ -55,7 +55,7 @@ jest.unstable_mockModule('../../../scripts/modules/index.js', () => ({
 }));
 
 // Import after mocking
-const { GeminiCliProvider } = await import(
+const { GeminiCliProvider, GEMINI_AUTH_TYPES } = await import(
 	'../../../src/ai-providers/gemini-cli.js'
 );
 const { createGeminiProvider } = await import('ai-sdk-provider-gemini-cli');
@@ -106,7 +106,7 @@ describe('GeminiCliProvider', () => {
 			expect(client).toBeDefined();
 			expect(typeof client).toBe('function');
 			expect(createGeminiProvider).toHaveBeenCalledWith({
-				authType: 'gemini-api-key',
+				authType: GEMINI_AUTH_TYPES.API_KEY,
 				apiKey: 'test-api-key'
 			});
 		});
@@ -117,7 +117,7 @@ describe('GeminiCliProvider', () => {
 			expect(client).toBeDefined();
 			expect(typeof client).toBe('function');
 			expect(createGeminiProvider).toHaveBeenCalledWith({
-				authType: 'oauth-personal'
+				authType: GEMINI_AUTH_TYPES.OAUTH_PERSONAL
 			});
 		});
 
@@ -129,7 +129,7 @@ describe('GeminiCliProvider', () => {
 
 			expect(client).toBeDefined();
 			expect(createGeminiProvider).toHaveBeenCalledWith({
-				authType: 'gemini-api-key',
+				authType: GEMINI_AUTH_TYPES.API_KEY,
 				apiKey: 'test-key',
 				baseURL: 'https://custom-endpoint.com'
 			});
@@ -423,7 +423,7 @@ describe('GeminiCliProvider', () => {
 				model: expect.objectContaining({
 					id: 'gemini-2.0-flash-exp',
 					authOptions: expect.objectContaining({
-						authType: 'gemini-api-key',
+						authType: GEMINI_AUTH_TYPES.API_KEY,
 						apiKey: 'test-key'
 					})
 				}),
@@ -625,7 +625,7 @@ describe('GeminiCliProvider', () => {
 			await provider.getClient({ apiKey: 'gemini-test-key' });
 
 			expect(createGeminiProvider).toHaveBeenCalledWith({
-				authType: 'gemini-api-key',
+				authType: GEMINI_AUTH_TYPES.API_KEY,
 				apiKey: 'gemini-test-key'
 			});
 		});
@@ -634,7 +634,7 @@ describe('GeminiCliProvider', () => {
 			await provider.getClient({});
 
 			expect(createGeminiProvider).toHaveBeenCalledWith({
-				authType: 'oauth-personal'
+				authType: GEMINI_AUTH_TYPES.OAUTH_PERSONAL
 			});
 		});
 
@@ -642,7 +642,7 @@ describe('GeminiCliProvider', () => {
 			await provider.getClient({ apiKey: '' });
 
 			expect(createGeminiProvider).toHaveBeenCalledWith({
-				authType: 'oauth-personal'
+				authType: GEMINI_AUTH_TYPES.OAUTH_PERSONAL
 			});
 		});
 	});
