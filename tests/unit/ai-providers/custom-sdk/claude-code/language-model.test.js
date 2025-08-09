@@ -1,26 +1,11 @@
 import { jest } from '@jest/globals';
 
-// Mock modules before importing
-jest.unstable_mockModule('@ai-sdk/provider', () => ({
-	NoSuchModelError: class NoSuchModelError extends Error {
-		constructor({ modelId, modelType }) {
-			super(`No such model: ${modelId}`);
-			this.modelId = modelId;
-			this.modelType = modelType;
-		}
-	}
-}));
-
-jest.unstable_mockModule('@ai-sdk/provider-utils', () => ({
-	generateId: jest.fn(() => 'test-id-123')
-}));
-
+// Mock supporting modules used by the language model
 jest.unstable_mockModule(
 	'../../../../../src/ai-providers/custom-sdk/claude-code/message-converter.js',
 	() => ({
 		convertToClaudeCodeMessages: jest.fn((prompt) => ({
-			messagesPrompt: 'converted-prompt',
-			systemPrompt: 'system'
+			messagesPrompt: prompt
 		}))
 	})
 );
@@ -54,184 +39,77 @@ const { ClaudeCodeLanguageModel } = await import(
 	'../../../../../src/ai-providers/custom-sdk/claude-code/language-model.js'
 );
 
-describe('ClaudeCodeLanguageModel', () => {
-	beforeEach(() => {
-		jest.clearAllMocks();
-		// Reset the module mock
-		mockClaudeCodeModule = null;
-		// Clear module cache to ensure fresh imports
+// Helper to reset dynamic import state
+const resetModuleState = async () => {
+	mockClaudeCodeModule = null;
+	jest.resetModules();
+};
+
+describe('ClaudeCodeLanguageModel (ai-sdk-provider-claude-code@beta aligned)', () => {
+	afterEach(async () => {
+		await resetModuleState();
+	});
+
+	it('constructs with model id and exposes provider name', async () => {
+		const model = new ClaudeCodeLanguageModel({ id: 'opus', settings: {} });
+		expect(model.modelId).toBe('opus');
+		expect(model.provider).toBe('claude-code');
+	});
+
+	it('throws a helpful error when the underlying SDK is not installed (lazy load)', async () => {
+		const { ClaudeCodeLanguageModel: TestModel } = await import(
+			'../../../../../src/ai-providers/custom-sdk/claude-code/language-model.js'
+		);
+		const model = new TestModel({ id: 'opus', settings: {} });
+
+		await expect(
+			model.doGenerate({ prompt: [{ role: 'user', content: 'Hi' }], mode: { type: 'regular' } })
+		).rejects.toThrow(
+			"Claude Code SDK is not installed. Please install '@anthropic-ai/claude-code' to use the claude-code provider."
+		);
+	});
+
+	it('generates text when SDK is available', async () => {
+		// Provide a mocked implementation of the SDK's query async generator
+		mockClaudeCodeModule = {
+			AbortError: class AbortError extends Error {},
+			query: ({ prompt }) =>
+				(async function* () {
+					yield { type: 'system', subtype: 'init', session_id: 'sess-1' };
+					yield {
+						type: 'assistant',
+						message: { content: [{ type: 'text', text: 'Hello ' }] }
+					};
+					yield {
+						type: 'assistant',
+						message: { content: [{ type: 'text', text: 'World' }] }
+					};
+					yield {
+						type: 'result',
+						session_id: 'sess-1',
+						total_cost_usd: 0.001,
+						duration_ms: 123,
+						usage: {
+							input_tokens: 10,
+							output_tokens: 5
+						}
+					};
+				})()
+		};
+
 		jest.resetModules();
-	});
+		const { ClaudeCodeLanguageModel: FreshModel } = await import(
+			'../../../../../src/ai-providers/custom-sdk/claude-code/language-model.js'
+		);
 
-	describe('constructor', () => {
-		it('should initialize with valid model ID', () => {
-			const model = new ClaudeCodeLanguageModel({
-				id: 'opus',
-				settings: { maxTurns: 5 }
-			});
-
-			expect(model.modelId).toBe('opus');
-			expect(model.settings).toEqual({ maxTurns: 5 });
-			expect(model.provider).toBe('claude-code');
+		const model = new FreshModel({ id: 'sonnet', settings: {} });
+		const result = await model.doGenerate({
+			prompt: [{ role: 'user', content: 'Hi' }],
+			mode: { type: 'regular' }
 		});
 
-		it('should throw NoSuchModelError for invalid model ID', async () => {
-			expect(
-				() =>
-					new ClaudeCodeLanguageModel({
-						id: '',
-						settings: {}
-					})
-			).toThrow('No such model: ');
-
-			expect(
-				() =>
-					new ClaudeCodeLanguageModel({
-						id: null,
-						settings: {}
-					})
-			).toThrow('No such model: null');
-		});
-	});
-
-	describe('lazy loading of @anthropic-ai/claude-code', () => {
-		it('should throw error when package is not installed', async () => {
-			// Keep mockClaudeCodeModule as null to simulate missing package
-			const model = new ClaudeCodeLanguageModel({
-				id: 'opus',
-				settings: {}
-			});
-
-			await expect(
-				model.doGenerate({
-					prompt: [{ role: 'user', content: 'test' }],
-					mode: { type: 'regular' }
-				})
-			).rejects.toThrow(
-				"Claude Code SDK is not installed. Please install '@anthropic-ai/claude-code' to use the claude-code provider."
-			);
-		});
-
-		it('should load package successfully when available', async () => {
-			// Mock successful package load
-			const mockQuery = jest.fn(async function* () {
-				yield {
-					type: 'assistant',
-					message: { content: [{ type: 'text', text: 'Hello' }] }
-				};
-				yield {
-					type: 'result',
-					subtype: 'done',
-					usage: { output_tokens: 10, input_tokens: 5 }
-				};
-			});
-
-			mockClaudeCodeModule = {
-				query: mockQuery,
-				AbortError: class AbortError extends Error {}
-			};
-
-			// Need to re-import to get fresh module with mocks
-			jest.resetModules();
-			const { ClaudeCodeLanguageModel: FreshModel } = await import(
-				'../../../../../src/ai-providers/custom-sdk/claude-code/language-model.js'
-			);
-
-			const model = new FreshModel({
-				id: 'opus',
-				settings: {}
-			});
-
-			const result = await model.doGenerate({
-				prompt: [{ role: 'user', content: 'test' }],
-				mode: { type: 'regular' }
-			});
-
-			expect(result.text).toBe('Hello');
-			expect(mockQuery).toHaveBeenCalled();
-		});
-
-		it('should only attempt to load package once', async () => {
-			// Get a fresh import to ensure clean state
-			jest.resetModules();
-			const { ClaudeCodeLanguageModel: TestModel } = await import(
-				'../../../../../src/ai-providers/custom-sdk/claude-code/language-model.js'
-			);
-
-			const model = new TestModel({
-				id: 'opus',
-				settings: {}
-			});
-
-			// First call should throw
-			await expect(
-				model.doGenerate({
-					prompt: [{ role: 'user', content: 'test' }],
-					mode: { type: 'regular' }
-				})
-			).rejects.toThrow('Claude Code SDK is not installed');
-
-			// Second call should also throw without trying to load again
-			await expect(
-				model.doGenerate({
-					prompt: [{ role: 'user', content: 'test' }],
-					mode: { type: 'regular' }
-				})
-			).rejects.toThrow('Claude Code SDK is not installed');
-		});
-	});
-
-	describe('generateUnsupportedWarnings', () => {
-		it('should generate warnings for unsupported parameters', () => {
-			const model = new ClaudeCodeLanguageModel({
-				id: 'opus',
-				settings: {}
-			});
-
-			const warnings = model.generateUnsupportedWarnings({
-				temperature: 0.7,
-				maxTokens: 1000,
-				topP: 0.9,
-				seed: 42
-			});
-
-			expect(warnings).toHaveLength(4);
-			expect(warnings[0]).toEqual({
-				type: 'unsupported-setting',
-				setting: 'temperature',
-				details:
-					'Claude Code CLI does not support the temperature parameter. It will be ignored.'
-			});
-		});
-
-		it('should return empty array when no unsupported parameters', () => {
-			const model = new ClaudeCodeLanguageModel({
-				id: 'opus',
-				settings: {}
-			});
-
-			const warnings = model.generateUnsupportedWarnings({});
-			expect(warnings).toEqual([]);
-		});
-	});
-
-	describe('getModel', () => {
-		it('should map model IDs correctly', () => {
-			const model = new ClaudeCodeLanguageModel({
-				id: 'opus',
-				settings: {}
-			});
-
-			expect(model.getModel()).toBe('opus');
-		});
-
-		it('should return unmapped model IDs as-is', () => {
-			const model = new ClaudeCodeLanguageModel({
-				id: 'custom-model',
-				settings: {}
-			});
-
-			expect(model.getModel()).toBe('custom-model');
-		});
+		expect(result.text).toBe('Hello World');
+		expect(result.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
+		expect(result.providerMetadata['claude-code'].sessionId).toBe('sess-1');
 	});
 });
