@@ -1,6 +1,6 @@
 # Claude Code Provider Usage Example
 
-The Claude Code provider allows you to use Claude models through the Claude Code CLI without requiring an API key.
+The Claude Code provider allows you to use Claude models through the Claude Code CLI without requiring an API key. This integration uses the official `ai-sdk-provider-claude-code` package.
 
 ## Configuration
 
@@ -33,8 +33,8 @@ To use the Claude Code provider, update your `.taskmaster/config.json`:
 
 ## Available Models
 
-- `opus` - Claude Opus model (SWE score: 0.725)
-- `sonnet` - Claude Sonnet model (SWE score: 0.727)
+- `opus` - Claude 4 Opus model (most capable)
+- `sonnet` - Claude 4 Sonnet model (balanced performance)
 
 ## Usage
 
@@ -60,19 +60,16 @@ task-master set-status --id=task-001 --status=in-progress
 ## Requirements
 
 1. Claude Code CLI must be installed and authenticated on your system
-2. Install the optional `@anthropic-ai/claude-code` package if you enable this provider:
-   ```bash
-   npm install @anthropic-ai/claude-code
-   ```
+2. The `ai-sdk-provider-claude-code` and `@anthropic-ai/claude-code` packages are installed automatically as dependencies
 3. Run Claude Code for the first time and authenticate with your Anthropic account:
    ```bash
-   claude
+   claude login
    ```
 4. No API key is required in your environment variables or MCP configuration
 
 ## Advanced Settings
 
-The Claude Code SDK supports additional settings that provide fine-grained control over Claude's behavior.  These settings are implemented in the underlying SDK (`src/ai-providers/custom-sdk/claude-code/`), and can be managed through Task Master's configuration file.
+The Claude Code provider supports additional settings through the official `ai-sdk-provider-claude-code` package that provide fine-grained control over Claude's behavior. These settings can be managed through Task Master's configuration file.
 
 ### Advanced Settings Usage
 
@@ -131,7 +128,7 @@ The Claude Code settings can be specified globally in the `claudeCode` section o
 }
 ```
 
-- For a full list of Cluaude Code settings, see the [Claude Code Settings documentation](https://docs.anthropic.com/en/docs/claude-code/settings).
+- For a full list of Claude Code settings, see the [ai-sdk-provider-claude-code documentation](https://github.com/ben-vargas/ai-sdk-provider-claude-code).
 - For a full list of AI powered command names, see this file: `src/constants/commands.js`
 
 ### Why These Settings Matter
@@ -146,5 +143,5 @@ The Claude Code settings can be specified globally in the `claudeCode` section o
 ## Notes
 
 - The Claude Code provider doesn't track usage costs (shown as 0 in telemetry)
-- Session management is handled automatically for conversation continuity
+- Session management is handled automatically for conversation continuity by the official provider
 - Some AI SDK parameters (temperature, maxTokens) are not supported by Claude Code CLI and will be ignored
