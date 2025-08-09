@@ -12,84 +12,191 @@ jest.unstable_mockModule('../../src/ai-providers/base-provider.js', () => ({
 	}
 }));
 
-// Mock the claude-code SDK to simulate it not being installed
-jest.unstable_mockModule('@anthropic-ai/claude-code', () => {
-	throw new Error("Cannot find module '@anthropic-ai/claude-code'");
-});
+// Mock the config manager
+jest.unstable_mockModule('../../scripts/modules/config-manager.js', () => ({
+	getClaudeCodeSettingsForCommand: jest.fn(() => ({
+		maxTurns: 5,
+		permissionMode: 'default'
+	}))
+}));
+
+// Mock the official ai-sdk-provider-claude-code package
+jest.unstable_mockModule('ai-sdk-provider-claude-code', () => ({
+	createClaudeCode: jest.fn(() => {
+		const provider = (modelId, settings) => ({
+			// Mock language model that implements AI SDK interface
+			id: modelId,
+			settings,
+			specificationVersion: 'v2',
+			defaultObjectGenerationMode: 'json',
+			supportsImageUrls: false,
+			supportedUrls: {},
+			supportsStructuredOutputs: false,
+			provider: 'claude-code',
+			doGenerate: jest.fn(async () => ({
+				text: 'Hello from Claude Code!',
+				finishReason: 'stop',
+				usage: { promptTokens: 10, completionTokens: 20 }
+			})),
+			doStream: jest.fn(async function* () {
+				yield { type: 'text-delta', textDelta: 'Hello' };
+				yield { type: 'text-delta', textDelta: ' from' };
+				yield { type: 'text-delta', textDelta: ' Claude!' };
+				yield { type: 'finish', finishReason: 'stop' };
+			})
+		});
+		provider.languageModel = jest.fn((id, settings) => provider(id, settings));
+		provider.chat = provider.languageModel;
+		return provider;
+	})
+}));
 
 // Import after mocking
 const { ClaudeCodeProvider } = await import(
 	'../../src/ai-providers/claude-code.js'
 );
 
-describe('Claude Code Optional Dependency Integration', () => {
-	describe('when @anthropic-ai/claude-code is not installed', () => {
-		it('should allow provider instantiation', () => {
-			// Provider should instantiate without error
-			const provider = new ClaudeCodeProvider();
+describe('Claude Code Integration with Official Package', () => {
+	let provider;
+
+	beforeEach(() => {
+		provider = new ClaudeCodeProvider();
+		jest.clearAllMocks();
+	});
+
+	describe('provider instantiation', () => {
+		it('should create provider instance successfully', () => {
 			expect(provider).toBeDefined();
 			expect(provider.name).toBe('Claude Code');
 		});
 
-		it('should allow client creation', () => {
-			const provider = new ClaudeCodeProvider();
-			// Client creation should work
-			const client = provider.getClient({});
-			expect(client).toBeDefined();
-			expect(typeof client).toBe('function');
-		});
-
-		it('should fail with clear error when trying to use the model', async () => {
-			const provider = new ClaudeCodeProvider();
-			const client = provider.getClient({});
-			const model = client('opus');
-
-			// The actual usage should fail with the lazy loading error
-			await expect(
-				model.doGenerate({
-					prompt: [{ role: 'user', content: 'Hello' }],
-					mode: { type: 'regular' }
-				})
-			).rejects.toThrow(
-				"Claude Code SDK is not installed. Please install '@anthropic-ai/claude-code' to use the claude-code provider."
-			);
-		});
-
-		it('should provide helpful error message for streaming', async () => {
-			const provider = new ClaudeCodeProvider();
-			const client = provider.getClient({});
-			const model = client('sonnet');
-
-			await expect(
-				model.doStream({
-					prompt: [{ role: 'user', content: 'Hello' }],
-					mode: { type: 'regular' }
-				})
-			).rejects.toThrow(
-				"Claude Code SDK is not installed. Please install '@anthropic-ai/claude-code' to use the claude-code provider."
-			);
+		it('should not require API key validation', () => {
+			expect(() => provider.validateAuth()).not.toThrow();
+			expect(() => provider.validateAuth({ apiKey: null })).not.toThrow();
+			expect(() => provider.validateAuth({ 
+				apiKey: 'some-key',
+				baseURL: 'https://example.com'
+			})).not.toThrow();
 		});
 	});
 
-	describe('provider behavior', () => {
-		it('should not require API key', () => {
-			const provider = new ClaudeCodeProvider();
-			// Should not throw
-			expect(() => provider.validateAuth()).not.toThrow();
-			expect(() => provider.validateAuth({ apiKey: null })).not.toThrow();
+	describe('client creation', () => {
+		it('should create client using official provider', () => {
+			const client = provider.getClient({});
+			expect(client).toBeDefined();
+			expect(typeof client).toBe('function');
+			expect(client.languageModel).toBeDefined();
+			expect(client.chat).toBeDefined();
 		});
 
-		it('should work with ai-services-unified when provider is configured', async () => {
-			// This tests that the provider can be selected but will fail appropriately
-			// when the actual model is used
-			const provider = new ClaudeCodeProvider();
-			expect(provider).toBeDefined();
+		it('should pass command-specific settings to provider', async () => {
+			const client = provider.getClient({ commandName: 'parse-prd' });
+			expect(client).toBeDefined();
+			
+			// Verify that the createClaudeCode was called with settings
+			const { createClaudeCode } = await import('ai-sdk-provider-claude-code');
+			expect(createClaudeCode).toHaveBeenCalledWith({
+				defaultSettings: expect.objectContaining({
+					maxTurns: 5,
+					permissionMode: 'default'
+				})
+			});
+		});
 
-			// In real usage, ai-services-unified would:
-			// 1. Get the provider instance (works)
-			// 2. Call provider.getClient() (works)
-			// 3. Create a model (works)
-			// 4. Try to generate (fails with clear error)
+		it('should handle client creation without parameters', () => {
+			const client = provider.getClient();
+			expect(client).toBeDefined();
+		});
+	});
+
+	describe('model creation and usage', () => {
+		it('should create models with correct configuration', () => {
+			const client = provider.getClient({});
+			
+			// Test creating models
+			const opusModel = client('opus');
+			expect(opusModel).toBeDefined();
+			expect(opusModel.id).toBe('opus');
+			
+			const sonnetModel = client('sonnet');
+			expect(sonnetModel).toBeDefined();
+			expect(sonnetModel.id).toBe('sonnet');
+		});
+
+		it('should support languageModel method', () => {
+			const client = provider.getClient({});
+			const model = client.languageModel('sonnet', { maxTurns: 3 });
+			
+			expect(model).toBeDefined();
+			expect(model.id).toBe('sonnet');
+			expect(model.settings).toEqual(expect.objectContaining({
+				maxTurns: 3
+			}));
+		});
+
+		it('should support chat method as alias', () => {
+			const client = provider.getClient({});
+			const model = client.chat('opus');
+			
+			expect(model).toBeDefined();
+			expect(model.id).toBe('opus');
+		});
+	});
+
+	describe('AI SDK v5 compatibility', () => {
+		it('should create models compatible with AI SDK v5 interface', () => {
+			const client = provider.getClient({});
+			const model = client('sonnet');
+			
+			// Check for AI SDK v5 properties
+			expect(model.specificationVersion).toBe('v2');
+			expect(model.defaultObjectGenerationMode).toBe('json');
+			expect(model.supportsImageUrls).toBe(false);
+			expect(model.supportsStructuredOutputs).toBe(false);
+			expect(model.provider).toBe('claude-code');
+		});
+
+		it('should support generation methods', async () => {
+			const client = provider.getClient({});
+			const model = client('sonnet');
+			
+			// Test generation
+			const result = await model.doGenerate();
+			expect(result.text).toBe('Hello from Claude Code!');
+			expect(result.finishReason).toBe('stop');
+			expect(result.usage).toEqual({
+				promptTokens: 10,
+				completionTokens: 20
+			});
+		});
+
+		it('should support streaming', async () => {
+			const client = provider.getClient({});
+			const model = client('sonnet');
+			
+			// Test streaming
+			const stream = model.doStream();
+			const chunks = [];
+			for await (const chunk of stream) {
+				chunks.push(chunk);
+			}
+			
+			expect(chunks).toHaveLength(4);
+			expect(chunks[0]).toEqual({ type: 'text-delta', textDelta: 'Hello' });
+			expect(chunks[3]).toEqual({ type: 'finish', finishReason: 'stop' });
+		});
+	});
+
+	describe('error handling', () => {
+		it('should handle provider creation errors', async () => {
+			// Mock createClaudeCode to throw an error
+			const { createClaudeCode } = await import('ai-sdk-provider-claude-code');
+			createClaudeCode.mockImplementationOnce(() => {
+				throw new Error('Provider initialization failed');
+			});
+
+			const errorProvider = new ClaudeCodeProvider();
+			expect(() => errorProvider.getClient({})).toThrow('Provider initialization failed');
 		});
 	});
 });

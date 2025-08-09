@@ -2,10 +2,10 @@
  * src/ai-providers/claude-code.js
  *
  * Implementation for interacting with Claude models via Claude Code CLI
- * using a custom AI SDK implementation.
+ * using the official ai-sdk-provider-claude-code package.
  */
 
-import { createClaudeCode } from './custom-sdk/claude-code/index.js';
+import { createClaudeCode } from 'ai-sdk-provider-claude-code';
 import { BaseAIProvider } from './base-provider.js';
 import { getClaudeCodeSettingsForCommand } from '../../scripts/modules/config-manager.js';
 
@@ -21,23 +21,25 @@ export class ClaudeCodeProvider extends BaseAIProvider {
 	 */
 	validateAuth(params) {
 		// Claude Code doesn't require an API key
-		// No validation needed
+		// Authentication is handled by the claude login command
 	}
 
 	/**
-	 * Creates and returns a Claude Code client instance.
+	 * Creates and returns a Claude Code client instance using the official provider.
 	 * @param {object} params - Parameters for client initialization
 	 * @param {string} [params.commandName] - Name of the command invoking the service
 	 * @param {string} [params.baseURL] - Optional custom API endpoint (not used by Claude Code)
-	 * @returns {Function} Claude Code client function
+	 * @returns {Function} Claude Code provider instance
 	 * @throws {Error} If initialization fails
 	 */
 	getClient(params) {
 		try {
-			// Claude Code doesn't use API keys or base URLs
-			// Just return the provider factory
+			// Get settings from config manager
+			const defaultSettings = getClaudeCodeSettingsForCommand(params?.commandName);
+			
+			// Create the official provider with default settings
 			return createClaudeCode({
-				defaultSettings: getClaudeCodeSettingsForCommand(params?.commandName)
+				defaultSettings
 			});
 		} catch (error) {
 			this.handleError('client initialization', error);

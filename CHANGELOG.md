@@ -1,5 +1,19 @@
 # task-master-ai
 
+## 0.19.1
+
+### Minor Changes
+
+- Updated Claude Code provider integration to use official `ai-sdk-provider-claude-code@beta` and `ai@beta` packages, replacing the custom SDK implementation with better compatibility and AI SDK v5-beta support.
+
+### Patch Changes
+
+- Migrated from custom claude-code SDK implementation to official `ai-sdk-provider-claude-code@1.0.0-beta.1`
+- Updated to AI SDK v5-beta for improved Claude Code integration
+- Updated all tests to work with the new official provider package
+- Removed deprecated custom SDK files and dependencies
+- Improved error handling and compatibility with latest Claude Code features
+
 ## 0.19.0
 
 ### Minor Changes
