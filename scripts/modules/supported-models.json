@@ -67,6 +67,17 @@
 			"allowed_roles": ["main", "fallback", "research"],
 			"max_tokens": 64000,
 			"supported": true
+		},
+		{
+			"id": "haiku",
+			"swe_score": 0.4,
+			"cost_per_1m_tokens": {
+				"input": 0,
+				"output": 0
+			},
+			"allowed_roles": ["main", "fallback"],
+			"max_tokens": 200000,
+			"supported": true
 		}
 	],
 	"mcp": [
