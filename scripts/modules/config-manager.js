@@ -792,11 +792,27 @@ function getMcpApiKeyStatus(providerName, projectRoot = null) {
 }
 
 /**
- * Gets a list of available models based on the MODEL_MAP.
+ * Gets a list of available models, enhanced with models.dev data when possible.
+ * Maintains backward compatibility while providing richer model information.
  * @returns {Array<{id: string, name: string, provider: string, swe_score: number|null, cost_per_1m_tokens: {input: number|null, output: number|null}|null, allowed_roles: string[]}>}
  */
 function getAvailableModels() {
+	// Always start with static models for backward compatibility
+	const staticModels = getStaticModels();
+	
+	// Try to enhance with models.dev data asynchronously if possible
+	// For now, return static models synchronously to maintain compatibility
+	// Future enhancement: make this function async or use background loading
+	return staticModels;
+}
+
+/**
+ * Get static models from MODEL_MAP (original behavior)
+ * @returns {Array} Static model array
+ */
+function getStaticModels() {
 	const available = [];
+	
 	for (const [provider, models] of Object.entries(MODEL_MAP)) {
 		if (models.length > 0) {
 			models
@@ -828,7 +844,8 @@ function getAvailableModels() {
 						swe_score: sweScore,
 						cost_per_1m_tokens: cost,
 						allowed_roles: allowedRoles,
-						max_tokens: modelObj.max_tokens
+						max_tokens: modelObj.max_tokens,
+						source: 'static' // Mark as static for identification
 					});
 				});
 		} else {
@@ -836,11 +853,52 @@ function getAvailableModels() {
 			available.push({
 				id: `[${provider}-any]`,
 				name: `Any (${provider})`,
-				provider: provider
+				provider: provider,
+				source: 'static'
 			});
 		}
 	}
+	
 	return available;
+}
+
+/**
+ * Get all available models combining static and models.dev data
+ * This is an async version for components that can handle async loading
+ * @returns {Promise<Array>} Complete model array with dynamic data
+ */
+async function getAllAvailableModels() {
+	try {
+		// Dynamically import the services to avoid circular dependencies
+		const { modelsDevService } = await import('../../src/services/models-dev-service.js');
+		const { modelMerger } = await import('../../src/services/model-merger.js');
+		
+		// Load static models
+		const staticModels = getStaticModels();
+		
+		// Load dynamic models from models.dev
+		let dynamicModels = [];
+		try {
+			// Get all models from models.dev
+			const allDynamicModels = await modelsDevService.searchModels();
+			dynamicModels = allDynamicModels;
+			
+			log(`[CONFIG-MANAGER] Loaded ${dynamicModels.length} models from models.dev`);
+		} catch (error) {
+			log(`[CONFIG-MANAGER] models.dev unavailable: ${error.message}`);
+		}
+		
+		// Merge static and dynamic models
+		const mergedModels = modelMerger.mergeStaticAndDynamic(staticModels, dynamicModels);
+		
+		log(`[CONFIG-MANAGER] Model loading: ${staticModels.length} static + ${dynamicModels.length} dynamic → ${mergedModels.length} total`);
+		
+		return mergedModels;
+		
+	} catch (error) {
+		log(`[CONFIG-MANAGER] Dynamic loading failed: ${error.message}, using static models`);
+		return getStaticModels();
+	}
 }
 
 /**
@@ -1007,5 +1065,7 @@ export {
 	// ADD: Function to get all provider names
 	getAllProviders,
 	getVertexProjectId,
-	getVertexLocation
+	getVertexLocation,
+	// Dynamic model functions
+	getAllAvailableModels
 };
