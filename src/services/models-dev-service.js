@@ -40,7 +40,7 @@ export class ModelsDevService {
 			}
 
 			// Fetch from API
-			log('[MODELS-DEV] Fetching models from models.dev API...');
+			log('info', '[MODELS-DEV] Fetching models from models.dev API...');
 			const response = await fetch(this.apiUrl, {
 				headers: {
 					'User-Agent': 'task-master-ai/models-dev-integration',
@@ -64,16 +64,16 @@ export class ModelsDevService {
 			await this._saveToCache(data);
 			this._memoryCache = data;
 
-			log(`[MODELS-DEV] Successfully loaded ${Object.keys(data).length} providers`);
+			log('info', `[MODELS-DEV] Successfully loaded ${Object.keys(data).length} providers`);
 			return data;
 
 		} catch (error) {
-			log(`[MODELS-DEV] API fetch failed: ${error.message}`);
+			log('error', `[MODELS-DEV] API fetch failed: ${error.message}`);
 			
 			// Try stale cache as fallback
 			const staleData = await this._loadFromCache(true); // ignore TTL
 			if (staleData) {
-				log('[MODELS-DEV] Using stale cache as fallback');
+				log('warn', '[MODELS-DEV] Using stale cache as fallback');
 				this._memoryCache = staleData;
 				return staleData;
 			}
@@ -222,7 +222,7 @@ export class ModelsDevService {
 				await fs.promises.unlink(this.cacheFile);
 			}
 		} catch (error) {
-			log(`[MODELS-DEV] Cache clear warning: ${error.message}`);
+			log('warn', `[MODELS-DEV] Cache clear warning: ${error.message}`);
 		}
 	}
 
@@ -272,18 +272,18 @@ export class ModelsDevService {
 
 			// Check TTL unless explicitly ignored
 			if (!ignoreTTL && age > this.cacheTimeout) {
-				log('[MODELS-DEV] Cache expired, will fetch fresh data');
+				log('debug', '[MODELS-DEV] Cache expired, will fetch fresh data');
 				return null;
 			}
 
 			const rawData = await fs.promises.readFile(this.cacheFile, 'utf-8');
 			const data = JSON.parse(rawData);
 
-			log(`[MODELS-DEV] Loaded from cache (age: ${Math.round(age / (1000 * 60))}min)`);
+			log('debug', `[MODELS-DEV] Loaded from cache (age: ${Math.round(age / (1000 * 60))}min)`);
 			return data;
 
 		} catch (error) {
-			log(`[MODELS-DEV] Cache load failed: ${error.message}`);
+			log('debug', `[MODELS-DEV] Cache load failed: ${error.message}`);
 			return null;
 		}
 	}
@@ -307,9 +307,9 @@ export class ModelsDevService {
 				'utf-8'
 			);
 
-			log('[MODELS-DEV] Data cached successfully');
+			log('debug', '[MODELS-DEV] Data cached successfully');
 		} catch (error) {
-			log(`[MODELS-DEV] Cache save warning: ${error.message}`);
+			log('warn', `[MODELS-DEV] Cache save warning: ${error.message}`);
 		}
 	}
 

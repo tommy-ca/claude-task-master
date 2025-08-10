@@ -35,12 +35,12 @@ export class ModelMerger {
 			// Deduplicate (prefer models.dev over static)
 			const deduplicated = this.deduplicateModels(combined);
 
-			log(`[MODEL-MERGER] Merged ${staticModels.length} static + ${dynamicModels.length} dynamic → ${deduplicated.length} total models`);
+			log('info', `[MODEL-MERGER] Merged ${staticModels.length} static + ${dynamicModels.length} dynamic → ${deduplicated.length} total models`);
 			
 			return deduplicated;
 
 		} catch (error) {
-			log(`[MODEL-MERGER] Merge failed: ${error.message}, returning static models only`);
+			log('error', `[MODEL-MERGER] Merge failed: ${error.message}, returning static models only`);
 			return staticModels.map(model => this.normalizeModelFormat(model, 'static'));
 		}
 	}
@@ -71,7 +71,7 @@ export class ModelMerger {
 						...model,     // Override with dynamic data
 						source: 'models.dev'
 					});
-					log(`[MODEL-MERGER] Upgraded ${key} from static to models.dev`);
+					log('debug', `[MODEL-MERGER] Upgraded ${key} from static to models.dev`);
 				}
 				// If both are same source or existing is already models.dev, keep existing
 			}
