@@ -9,21 +9,7 @@ import { generateObject, generateText, streamText } from 'ai';
 import { parse } from 'jsonc-parser';
 import { BaseAIProvider } from './base-provider.js';
 import { log } from '../../scripts/modules/utils.js';
-
-let createGeminiProvider;
-
-async function loadGeminiCliModule() {
-	if (!createGeminiProvider) {
-		try {
-			const mod = await import('ai-sdk-provider-gemini-cli');
-			createGeminiProvider = mod.createGeminiProvider;
-		} catch (err) {
-			throw new Error(
-				"Gemini CLI SDK is not installed. Please install 'ai-sdk-provider-gemini-cli' to use the gemini-cli provider."
-			);
-		}
-	}
-}
+import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli';
 
 export class GeminiCliProvider extends BaseAIProvider {
 	constructor() {
