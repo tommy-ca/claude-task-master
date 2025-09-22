@@ -3,7 +3,7 @@
  *
  * Claude Code provider implementation using the ai-sdk-provider-claude-code package.
  * This provider uses the local Claude Code CLI with OAuth token authentication.
- * 
+ *
  * Authentication:
  * - Uses CLAUDE_CODE_OAUTH_TOKEN managed by Claude Code CLI
  * - Token is set up via: claude setup-token
@@ -16,7 +16,7 @@ import { getClaudeCodeSettingsForCommand } from '../../scripts/modules/config-ma
 
 /**
  * Provider for Claude Code CLI integration via AI SDK
- * 
+ *
  * Features:
  * - No API key required (uses local Claude Code CLI)
  * - Supports 'sonnet' and 'opus' models
@@ -61,13 +61,16 @@ export class ClaudeCodeProvider extends BaseAIProvider {
 	getClient(params = {}) {
 		try {
 			const settings = getClaudeCodeSettingsForCommand(params.commandName);
-			
+
 			return createClaudeCode({
 				defaultSettings: settings
 			});
 		} catch (error) {
 			// Provide more helpful error message
-			if (error.message.includes('Claude Code') || error.message.includes('claude')) {
+			if (
+				error.message.includes('Claude Code') ||
+				error.message.includes('claude')
+			) {
 				const enhancedError = new Error(
 					`Claude Code CLI not available. Please install Claude Code CLI first. Original error: ${error.message}`
 				);

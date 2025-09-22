@@ -2,18 +2,18 @@ import { jest } from '@jest/globals';
 
 // Mock the ai-sdk-provider-claude-code package
 jest.unstable_mockModule('ai-sdk-provider-claude-code', () => ({
-  createClaudeCode: jest.fn(() => {
-    const provider = (modelId, settings) => ({
-      // Minimal mock language model surface
-      id: modelId,
-      settings,
-      doGenerate: jest.fn(async () => ({ text: 'ok', usage: {} })),
-      doStream: jest.fn(async () => ({ stream: true }))
-    });
-    provider.languageModel = jest.fn((id, settings) => ({ id, settings }));
-    provider.chat = provider.languageModel;
-    return provider;
-  })
+	createClaudeCode: jest.fn(() => {
+		const provider = (modelId, settings) => ({
+			// Minimal mock language model surface
+			id: modelId,
+			settings,
+			doGenerate: jest.fn(async () => ({ text: 'ok', usage: {} })),
+			doStream: jest.fn(async () => ({ stream: true }))
+		});
+		provider.languageModel = jest.fn((id, settings) => ({ id, settings }));
+		provider.chat = provider.languageModel;
+		return provider;
+	})
 }));
 
 // Mock the base provider
@@ -79,8 +79,8 @@ describe('ClaudeCodeProvider', () => {
 		});
 
 		it('should handle commandName parameter', () => {
-			const client = provider.getClient({ 
-				commandName: 'test-command' 
+			const client = provider.getClient({
+				commandName: 'test-command'
 			});
 			expect(client).toBeDefined();
 		});
@@ -110,16 +110,16 @@ describe('ClaudeCodeProvider', () => {
 	describe('error handling', () => {
 		it('should handle client initialization errors', async () => {
 			// Force an error by making createClaudeCode throw
-			const { createClaudeCode } = await import(
-				'ai-sdk-provider-claude-code'
-			);
+			const { createClaudeCode } = await import('ai-sdk-provider-claude-code');
 			createClaudeCode.mockImplementationOnce(() => {
 				throw new Error('Mock initialization error');
 			});
 
 			// Create a new provider instance to use the mocked createClaudeCode
 			const errorProvider = new ClaudeCodeProvider();
-			expect(() => errorProvider.getClient({})).toThrow('Mock initialization error');
+			expect(() => errorProvider.getClient({})).toThrow(
+				'Mock initialization error'
+			);
 		});
 	});
 });

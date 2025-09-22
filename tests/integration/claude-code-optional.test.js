@@ -9,7 +9,7 @@ describe('Claude Code Integration (Optional)', () => {
 		// Mock AI SDK functions
 		generateText = jest.fn();
 		streamText = jest.fn();
-		
+
 		jest.unstable_mockModule('ai', () => ({
 			generateText,
 			streamText
@@ -28,7 +28,9 @@ describe('Claude Code Integration (Optional)', () => {
 			})
 		}));
 
-		const { ClaudeCodeProvider } = await import('../../src/ai-providers/claude-code.js');
+		const { ClaudeCodeProvider } = await import(
+			'../../src/ai-providers/claude-code.js'
+		);
 		const provider = new ClaudeCodeProvider();
 
 		expect(() => provider.getClient()).toThrow(/Claude Code CLI not available/);
@@ -37,12 +39,12 @@ describe('Claude Code Integration (Optional)', () => {
 	describe('with Claude Code available', () => {
 		beforeEach(async () => {
 			// Mock successful provider creation
-			const mockProvider = jest.fn((modelId) => ({ 
+			const mockProvider = jest.fn((modelId) => ({
 				id: modelId,
 				doGenerate: jest.fn(),
 				doStream: jest.fn()
 			}));
-			
+
 			jest.unstable_mockModule('ai-sdk-provider-claude-code', () => ({
 				createClaudeCode: jest.fn(() => mockProvider)
 			}));
@@ -60,7 +62,7 @@ describe('Claude Code Integration (Optional)', () => {
 		it('should integrate with AI SDK generateText', async () => {
 			const provider = new ClaudeCodeProvider();
 			const client = provider.getClient();
-			
+
 			// Mock successful generation
 			generateText.mockResolvedValueOnce({
 				text: 'Hello from Claude Code!',
@@ -82,7 +84,7 @@ describe('Claude Code Integration (Optional)', () => {
 		it('should integrate with AI SDK streamText', async () => {
 			const provider = new ClaudeCodeProvider();
 			const client = provider.getClient();
-			
+
 			// Mock successful streaming
 			const mockStream = {
 				textStream: (async function* () {
