@@ -355,7 +355,7 @@ Ensure the JSON is valid and properly formatted.`;
 		const subtaskSchema = z.object({
 			subtasks: z.array(
 				z.object({
-					id: z.number().int().positive(),
+					id: z.int().positive(),
 					title: z.string().min(5),
 					description: z.string().min(10),
 					dependencies: z.array(z.string()),
