@@ -55,9 +55,9 @@ describe('OpenAIProvider', () => {
 			expect(result).toEqual({ max_completion_tokens: 1000 });
 		});
 
-		it('should return maxTokens for non-GPT-5 models', () => {
+		it('should return maxOutputTokens for non-GPT-5 models', () => {
 			const result = provider.prepareTokenParam('gpt-4', 1000);
-			expect(result).toEqual({ maxTokens: 1000 });
+			expect(result).toEqual({ maxOutputTokens: 1000 });
 		});
 
 		it('should coerce token value to integer', () => {
@@ -66,7 +66,7 @@ describe('OpenAIProvider', () => {
 			expect(result1).toEqual({ max_completion_tokens: 1000 });
 
 			const result2 = provider.prepareTokenParam('gpt-4', 1000.7);
-			expect(result2).toEqual({ maxTokens: 1000 });
+			expect(result2).toEqual({ maxOutputTokens: 1000 });
 
 			// String float
 			const result3 = provider.prepareTokenParam('gpt-5', '1000.7');
@@ -77,7 +77,7 @@ describe('OpenAIProvider', () => {
 				max_completion_tokens: 1000
 			});
 			expect(provider.prepareTokenParam('gpt-4', '1000')).toEqual({
-				maxTokens: 1000
+				maxOutputTokens: 1000
 			});
 		});
 
@@ -97,7 +97,7 @@ describe('OpenAIProvider', () => {
 
 			// Test with negative number (will be floored, validation happens elsewhere)
 			const result3 = provider.prepareTokenParam('gpt-4', -10.5);
-			expect(result3).toEqual({ maxTokens: -11 });
+			expect(result3).toEqual({ maxOutputTokens: -11 });
 		});
 	});
 

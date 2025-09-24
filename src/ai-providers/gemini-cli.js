@@ -427,7 +427,7 @@ Generate ${subtaskCount} subtasks based on the original task context. Return ONL
 				model: client(params.modelId),
 				system: systemPrompt,
 				messages: messages,
-				maxTokens: params.maxTokens,
+				maxOutputTokens: params.maxTokens,
 				temperature: params.temperature
 			});
 
@@ -531,7 +531,7 @@ Generate ${subtaskCount} subtasks based on the original task context. Return ONL
 				model: client(params.modelId),
 				system: systemPrompt,
 				messages: messages,
-				maxTokens: params.maxTokens,
+				maxOutputTokens: params.maxTokens,
 				temperature: params.temperature
 			});
 
@@ -590,7 +590,7 @@ Generate ${subtaskCount} subtasks based on the original task context. Return ONL
 						messages: messages,
 						schema: params.schema,
 						mode: 'json', // Use json mode instead of auto for Gemini
-						maxTokens: params.maxTokens,
+						maxOutputTokens: params.maxTokens,
 						temperature: params.temperature
 					});
 

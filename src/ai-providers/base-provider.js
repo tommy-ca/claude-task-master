@@ -153,7 +153,7 @@ export class BaseAIProvider {
 		if (this.requiresMaxCompletionTokens(modelId)) {
 			return { max_completion_tokens: tokenValue };
 		} else {
-			return { maxTokens: tokenValue };
+			return { maxOutputTokens: tokenValue };
 		}
 	}
 
@@ -248,7 +248,7 @@ export class BaseAIProvider {
 				messages: params.messages,
 				schema: zodSchema(params.schema),
 				mode: params.mode || 'auto',
-				maxTokens: params.maxTokens,
+				maxOutputTokens: params.maxTokens,
 				temperature: params.temperature
 			});
 
