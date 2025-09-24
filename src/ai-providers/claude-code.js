@@ -72,17 +72,17 @@ export class ClaudeCodeProvider extends BaseAIProvider {
 	 */
 	getClient(params = {}) {
 		try {
-			const settings = getClaudeCodeSettingsForCommand(params.commandName);
+			const settings =
+				getClaudeCodeSettingsForCommand(params.commandName) || {};
 
 			return createClaudeCode({
 				defaultSettings: settings
 			});
 		} catch (error) {
 			// Provide more helpful error message
-			if (
-				error.message.includes('Claude Code') ||
-				error.message.includes('claude')
-			) {
+			const msg = String(error?.message || '');
+			const code = error?.code;
+			if (code === 'ENOENT' || /claude/i.test(msg)) {
 				const enhancedError = new Error(
 					`Claude Code CLI not available. Please install Claude Code CLI first. Original error: ${error.message}`
 				);

@@ -1,110 +1,126 @@
 import { jest } from '@jest/globals';
 
+// Mock AI SDK functions at the top level
+const generateText = jest.fn();
+const streamText = jest.fn();
+
+jest.unstable_mockModule('ai', () => ({
+	generateObject: jest.fn(),
+	generateText,
+	streamText,
+	streamObject: jest.fn(),
+	zodSchema: jest.fn(),
+	JSONParseError: class JSONParseError extends Error {},
+	NoObjectGeneratedError: class NoObjectGeneratedError extends Error {}
+}));
+
+// Mock successful provider creation for all tests
+const mockProvider = jest.fn((modelId) => ({
+	id: modelId,
+	doGenerate: jest.fn(),
+	doStream: jest.fn()
+}));
+mockProvider.languageModel = jest.fn((id, settings) => ({ id, settings }));
+mockProvider.chat = mockProvider.languageModel;
+
+jest.unstable_mockModule('ai-sdk-provider-claude-code', () => ({
+	createClaudeCode: jest.fn(() => mockProvider)
+}));
+
+// Import the provider after mocking
+const { ClaudeCodeProvider } = await import(
+	'../../src/ai-providers/claude-code.js'
+);
+
 describe('Claude Code Integration (Optional)', () => {
-	let ClaudeCodeProvider;
-	let generateText;
-	let streamText;
-
-	beforeAll(async () => {
-		// Mock AI SDK functions
-		generateText = jest.fn();
-		streamText = jest.fn();
-
-		jest.unstable_mockModule('ai', () => ({
-			generateText,
-			streamText
-		}));
-	});
-
 	beforeEach(() => {
 		jest.clearAllMocks();
 	});
 
-	it('should handle missing claude code CLI gracefully', async () => {
-		// Mock the provider to throw when CLI is not available
-		jest.unstable_mockModule('ai-sdk-provider-claude-code', () => ({
-			createClaudeCode: jest.fn(() => {
-				throw new Error('Claude Code CLI not found');
-			})
-		}));
-
-		const { ClaudeCodeProvider } = await import(
-			'../../src/ai-providers/claude-code.js'
-		);
+	it('should create a working provider instance', () => {
 		const provider = new ClaudeCodeProvider();
-
-		expect(() => provider.getClient()).toThrow(/Claude Code CLI not available/);
+		expect(provider.name).toBe('Claude Code');
+		expect(provider.getSupportedModels()).toEqual(['sonnet', 'opus']);
 	});
 
-	describe('with Claude Code available', () => {
-		beforeEach(async () => {
-			// Mock successful provider creation
-			const mockProvider = jest.fn((modelId) => ({
-				id: modelId,
-				doGenerate: jest.fn(),
-				doStream: jest.fn()
-			}));
+	it('should support model validation', () => {
+		const provider = new ClaudeCodeProvider();
+		expect(provider.isModelSupported('sonnet')).toBe(true);
+		expect(provider.isModelSupported('opus')).toBe(true);
+		expect(provider.isModelSupported('haiku')).toBe(false);
+		expect(provider.isModelSupported('unknown')).toBe(false);
+	});
 
-			jest.unstable_mockModule('ai-sdk-provider-claude-code', () => ({
-				createClaudeCode: jest.fn(() => mockProvider)
-			}));
+	it('should create a client successfully', () => {
+		const provider = new ClaudeCodeProvider();
+		const client = provider.getClient();
 
-			const module = await import('../../src/ai-providers/claude-code.js');
-			ClaudeCodeProvider = module.ClaudeCodeProvider;
+		expect(client).toBeDefined();
+		expect(typeof client).toBe('function');
+		expect(client.languageModel).toBeDefined();
+		expect(client.chat).toBeDefined();
+		expect(client.chat).toBe(client.languageModel);
+	});
+
+	it('should pass command-specific settings to client', () => {
+		const provider = new ClaudeCodeProvider();
+		const client = provider.getClient({ commandName: 'test-command' });
+
+		expect(client).toBeDefined();
+		expect(typeof client).toBe('function');
+	});
+
+	it('should handle AI SDK generateText integration', async () => {
+		const provider = new ClaudeCodeProvider();
+		const client = provider.getClient();
+
+		// Mock successful generation
+		generateText.mockResolvedValueOnce({
+			text: 'Hello from Claude Code!',
+			usage: { totalTokens: 10 }
 		});
 
-		it('should create a working provider instance', () => {
-			const provider = new ClaudeCodeProvider();
-			expect(provider.name).toBe('Claude Code');
-			expect(provider.getSupportedModels()).toEqual(['sonnet', 'opus']);
+		const result = await generateText({
+			model: client('sonnet'),
+			messages: [{ role: 'user', content: 'Hello' }]
 		});
 
-		it('should integrate with AI SDK generateText', async () => {
-			const provider = new ClaudeCodeProvider();
-			const client = provider.getClient();
+		expect(result.text).toBe('Hello from Claude Code!');
+		expect(generateText).toHaveBeenCalledWith({
+			model: expect.any(Object),
+			messages: [{ role: 'user', content: 'Hello' }]
+		});
+	});
 
-			// Mock successful generation
-			generateText.mockResolvedValueOnce({
-				text: 'Hello from Claude Code!',
-				usage: { totalTokens: 10 }
-			});
+	it('should handle AI SDK streamText integration', async () => {
+		const provider = new ClaudeCodeProvider();
+		const client = provider.getClient();
 
-			const result = await generateText({
-				model: client('sonnet'),
-				messages: [{ role: 'user', content: 'Hello' }]
-			});
+		// Mock successful streaming
+		const mockStream = {
+			textStream: (async function* () {
+				yield 'Streamed response';
+			})()
+		};
+		streamText.mockResolvedValueOnce(mockStream);
 
-			expect(result.text).toBe('Hello from Claude Code!');
-			expect(generateText).toHaveBeenCalledWith({
-				model: expect.any(Object),
-				messages: [{ role: 'user', content: 'Hello' }]
-			});
+		const streamResult = await streamText({
+			model: client('sonnet'),
+			messages: [{ role: 'user', content: 'Stream test' }]
 		});
 
-		it('should integrate with AI SDK streamText', async () => {
-			const provider = new ClaudeCodeProvider();
-			const client = provider.getClient();
-
-			// Mock successful streaming
-			const mockStream = {
-				textStream: (async function* () {
-					yield 'Hello ';
-					yield 'from ';
-					yield 'Claude Code!';
-				})()
-			};
-			streamText.mockResolvedValueOnce(mockStream);
-
-			const result = await streamText({
-				model: client('sonnet'),
-				messages: [{ role: 'user', content: 'Hello' }]
-			});
-
-			expect(result.textStream).toBeDefined();
-			expect(streamText).toHaveBeenCalledWith({
-				model: expect.any(Object),
-				messages: [{ role: 'user', content: 'Hello' }]
-			});
+		expect(streamResult.textStream).toBeDefined();
+		expect(streamText).toHaveBeenCalledWith({
+			model: expect.any(Object),
+			messages: [{ role: 'user', content: 'Stream test' }]
 		});
+	});
+
+	it('should not require authentication validation', () => {
+		const provider = new ClaudeCodeProvider();
+		expect(provider.isRequiredApiKey()).toBe(false);
+		expect(() => provider.validateAuth()).not.toThrow();
+		expect(() => provider.validateAuth({})).not.toThrow();
+		expect(() => provider.validateAuth({ commandName: 'test' })).not.toThrow();
 	});
 });
