@@ -7,8 +7,8 @@ jest.unstable_mockModule('ai-sdk-provider-claude-code', () => ({
 			// Minimal mock language model surface
 			id: modelId,
 			settings,
-			doGenerate: jest.fn(async () => ({ text: 'ok', usage: {} })),
-			doStream: jest.fn(async () => ({ stream: true }))
+			doGenerate: jest.fn(() => ({ text: 'ok', usage: {} })),
+			doStream: jest.fn(() => ({ stream: true }))
 		});
 		provider.languageModel = jest.fn((id, settings) => ({ id, settings }));
 		provider.chat = provider.languageModel;

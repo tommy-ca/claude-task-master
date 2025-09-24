@@ -40,8 +40,6 @@ export class GeminiCliProvider extends BaseAIProvider {
 	 */
 	async getClient(params) {
 		try {
-			// Load the Gemini CLI module dynamically
-			await loadGeminiCliModule();
 			// Primary use case: Use existing gemini CLI authentication
 			// Secondary use case: Direct API key (for compatibility)
 			let authOptions = {};

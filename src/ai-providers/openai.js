@@ -20,7 +20,6 @@ export class OpenAIProvider extends BaseAIProvider {
 		return 'OPENAI_API_KEY';
 	}
 
-
 	/**
 	 * Creates and returns an OpenAI client instance.
 	 * @param {object} params - Parameters for client initialization

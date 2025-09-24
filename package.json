@@ -17,7 +17,7 @@
 		"turbo:build": "turbo build",
 		"turbo:typecheck": "turbo typecheck",
 		"build:build-config": "npm run build -w @tm/build-config",
-		"test": "node --experimental-vm-modules node_modules/.bin/jest",
+		"test": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/.bin/jest",
 		"test:unit": "node --experimental-vm-modules node_modules/.bin/jest --testPathPattern=unit",
 		"test:integration": "node --experimental-vm-modules node_modules/.bin/jest --testPathPattern=integration",
 		"test:fails": "node --experimental-vm-modules node_modules/.bin/jest --onlyFailures",

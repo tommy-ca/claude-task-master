@@ -25,7 +25,6 @@ describe('OpenAIProvider', () => {
 		jest.clearAllMocks();
 	});
 
-
 	describe('validateOptionalParams', () => {
 		it('should accept valid maxTokens values', () => {
 			expect(() =>

@@ -13,6 +13,7 @@
 import { createClaudeCode } from 'ai-sdk-provider-claude-code';
 import { BaseAIProvider } from './base-provider.js';
 import { getClaudeCodeSettingsForCommand } from '../../scripts/modules/config-manager.js';
+import { execSync } from 'child_process';
 
 /**
  * Provider for Claude Code CLI integration via AI SDK
@@ -44,11 +45,22 @@ export class ClaudeCodeProvider extends BaseAIProvider {
 	}
 
 	/**
-	 * No authentication validation needed for Claude Code
+	 * Optional CLI availability check for Claude Code
 	 * @param {object} params - Parameters (ignored)
 	 */
 	validateAuth(params) {
-		// Claude Code uses local CLI - no API key validation needed
+		// Claude Code uses local CLI - perform lightweight availability check
+		// This is optional validation that fails fast with actionable guidance
+		if (process.env.NODE_ENV !== 'test') {
+			try {
+				execSync('claude --version', { stdio: 'pipe', timeout: 1000 });
+			} catch (error) {
+				// Non-blocking warning for CLI availability
+				console.warn(
+					'Claude Code CLI not detected. Please ensure Claude Code CLI is installed and available. Run: npm install -g @anthropics/claude-code'
+				);
+			}
+		}
 	}
 
 	/**
@@ -95,6 +107,7 @@ export class ClaudeCodeProvider extends BaseAIProvider {
 	 * @returns {boolean} True if supported
 	 */
 	isModelSupported(modelId) {
-		return this.supportedModels.includes(modelId);
+		if (!modelId) return false;
+		return this.supportedModels.includes(String(modelId).toLowerCase());
 	}
 }
