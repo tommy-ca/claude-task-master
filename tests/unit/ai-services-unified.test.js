@@ -226,6 +226,13 @@ jest.unstable_mockModule('../../src/ai-providers/index.js', () => ({
 		generateObject: jest.fn(),
 		getRequiredApiKeyName: jest.fn(() => 'GEMINI_API_KEY'),
 		isRequiredApiKey: jest.fn(() => false)
+	})),
+	GrokCliProvider: jest.fn(() => ({
+		generateText: jest.fn(),
+		streamText: jest.fn(),
+		generateObject: jest.fn(),
+		getRequiredApiKeyName: jest.fn(() => 'XAI_API_KEY'),
+		isRequiredApiKey: jest.fn(() => false)
 	}))
 }));
 
@@ -391,7 +398,7 @@ describe('Unified AI Services', () => {
 				expect.stringContaining('Service call failed for role main')
 			);
 			expect(mockLog).toHaveBeenCalledWith(
-				'info',
+				'debug',
 				expect.stringContaining('New AI service call with role: fallback')
 			);
 		});
@@ -435,7 +442,7 @@ describe('Unified AI Services', () => {
 				expect.stringContaining('Service call failed for role fallback')
 			);
 			expect(mockLog).toHaveBeenCalledWith(
-				'info',
+				'debug',
 				expect.stringContaining('New AI service call with role: research')
 			);
 		});

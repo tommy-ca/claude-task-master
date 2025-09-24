@@ -1,5 +1,99 @@
 # Change Log
 
+## 0.25.2-rc.1
+
+### Patch Changes
+
+- Updated dependencies [[`1a18794`](https://github.com/eyaltoledano/claude-task-master/commit/1a1879483b86c118a4e46c02cbf4acebfcf6bcf9)]:
+  - task-master-ai@0.27.1-rc.1
+
+## 0.25.2-rc.0
+
+### Patch Changes
+
+- Updated dependencies [[`f487736`](https://github.com/eyaltoledano/claude-task-master/commit/f487736670ef8c484059f676293777eabb249c9e)]:
+  - task-master-ai@0.27.1-rc.0
+
+## 0.25.0
+
+### Minor Changes
+
+- [#1200](https://github.com/eyaltoledano/claude-task-master/pull/1200) [`fce8414`](https://github.com/eyaltoledano/claude-task-master/commit/fce841490a9ebbf1801a42dd8a29397379cf1142) Thanks [@eyaltoledano](https://github.com/eyaltoledano)! - Add "Start Task" button to VS Code extension for seamless Claude Code integration
+
+  You can now click a "Start Task" button directly in the Task Master extension which will open a new terminal and automatically execute the task using Claude Code. This provides a seamless workflow from viewing tasks in the extension to implementing them without leaving VS Code.
+
+- [#1201](https://github.com/eyaltoledano/claude-task-master/pull/1201) [`83af314`](https://github.com/eyaltoledano/claude-task-master/commit/83af314879fc0e563581161c60d2bd089899313e) Thanks [@losolosol](https://github.com/losolosol)! - Added a Start Build button to the VSCODE Task Properties Right Panel
+
+### Patch Changes
+
+- [#1229](https://github.com/eyaltoledano/claude-task-master/pull/1229) [`674d1f6`](https://github.com/eyaltoledano/claude-task-master/commit/674d1f6de7ea98116b61bdae6198bafe6c4e7c1a) Thanks [@Crunchyman-ralph](https://github.com/Crunchyman-ralph)! - Fix MCP not connecting to new Taskmaster version
+
+- Updated dependencies [[`4e12643`](https://github.com/eyaltoledano/claude-task-master/commit/4e126430a092fb54afb035514fb3d46115714f97), [`fce8414`](https://github.com/eyaltoledano/claude-task-master/commit/fce841490a9ebbf1801a42dd8a29397379cf1142), [`fce8414`](https://github.com/eyaltoledano/claude-task-master/commit/fce841490a9ebbf1801a42dd8a29397379cf1142), [`fce8414`](https://github.com/eyaltoledano/claude-task-master/commit/fce841490a9ebbf1801a42dd8a29397379cf1142), [`a621ff0`](https://github.com/eyaltoledano/claude-task-master/commit/a621ff05eafb51a147a9aabd7b37ddc0e45b0869), [`e6de285`](https://github.com/eyaltoledano/claude-task-master/commit/e6de285ceacb0a397e952a63435cd32a9c731515), [`fce8414`](https://github.com/eyaltoledano/claude-task-master/commit/fce841490a9ebbf1801a42dd8a29397379cf1142)]:
+  - task-master-ai@0.27.0
+
+## 0.25.0-rc.0
+
+### Minor Changes
+
+- [#1201](https://github.com/eyaltoledano/claude-task-master/pull/1201) [`83af314`](https://github.com/eyaltoledano/claude-task-master/commit/83af314879fc0e563581161c60d2bd089899313e) Thanks [@losolosol](https://github.com/losolosol)! - Added a Start Build button to the VSCODE Task Properties Right Panel
+
+### Patch Changes
+
+- Updated dependencies [[`137ef36`](https://github.com/eyaltoledano/claude-task-master/commit/137ef362789a9cdfdb1925e35e0438c1fa6c69ee)]:
+  - task-master-ai@0.27.0-rc.0
+
+## 0.24.2
+
+### Patch Changes
+
+- Updated dependencies [[`8783708`](https://github.com/eyaltoledano/claude-task-master/commit/8783708e5e3389890a78fcf685d3da0580e73b3f), [`df26c65`](https://github.com/eyaltoledano/claude-task-master/commit/df26c65632000874a73504963b08f18c46283144), [`37af0f1`](https://github.com/eyaltoledano/claude-task-master/commit/37af0f191227a68d119b7f89a377bf932ee3ac66), [`c4f92f6`](https://github.com/eyaltoledano/claude-task-master/commit/c4f92f6a0aee3435c56eb8d27d9aa9204284833e), [`8783708`](https://github.com/eyaltoledano/claude-task-master/commit/8783708e5e3389890a78fcf685d3da0580e73b3f), [`4dad2fd`](https://github.com/eyaltoledano/claude-task-master/commit/4dad2fd613ceac56a65ae9d3c1c03092b8860ac9)]:
+  - task-master-ai@0.26.0
+
+## 0.24.2-rc.1
+
+### Patch Changes
+
+- Updated dependencies [[`c4f92f6`](https://github.com/eyaltoledano/claude-task-master/commit/c4f92f6a0aee3435c56eb8d27d9aa9204284833e)]:
+  - task-master-ai@0.26.0-rc.1
+
+## 0.24.2-rc.0
+
+### Patch Changes
+
+- Updated dependencies [[`8783708`](https://github.com/eyaltoledano/claude-task-master/commit/8783708e5e3389890a78fcf685d3da0580e73b3f), [`37af0f1`](https://github.com/eyaltoledano/claude-task-master/commit/37af0f191227a68d119b7f89a377bf932ee3ac66), [`8783708`](https://github.com/eyaltoledano/claude-task-master/commit/8783708e5e3389890a78fcf685d3da0580e73b3f), [`4dad2fd`](https://github.com/eyaltoledano/claude-task-master/commit/4dad2fd613ceac56a65ae9d3c1c03092b8860ac9)]:
+  - task-master-ai@0.26.0-rc.0
+
+## 0.24.1
+
+### Patch Changes
+
+- Updated dependencies [[`8933557`](https://github.com/eyaltoledano/claude-task-master/commit/89335578ffffc65504b2055c0c85aa7521e5e79b), [`db720a9`](https://github.com/eyaltoledano/claude-task-master/commit/db720a954d390bb44838cd021b8813dde8f3d8de)]:
+  - task-master-ai@0.25.1
+
+## 0.24.0
+
+### Minor Changes
+
+- [#1100](https://github.com/eyaltoledano/claude-task-master/pull/1100) [`30ca144`](https://github.com/eyaltoledano/claude-task-master/commit/30ca144231c36a6c63911f20adc225d38fb15a2f) Thanks [@vedovelli](https://github.com/vedovelli)! - Display current task ID on task details page
+
+### Patch Changes
+
+- Updated dependencies [[`04e11b5`](https://github.com/eyaltoledano/claude-task-master/commit/04e11b5e828597c0ba5b82ca7d5fb6f933e4f1e8), [`fc47714`](https://github.com/eyaltoledano/claude-task-master/commit/fc477143400fd11d953727bf1b4277af5ad308d1), [`782728f`](https://github.com/eyaltoledano/claude-task-master/commit/782728ff95aa2e3b766d48273b57f6c6753e8573), [`3dee60d`](https://github.com/eyaltoledano/claude-task-master/commit/3dee60dc3d566e3cff650accb30f994b8bb3a15e), [`e3ed4d7`](https://github.com/eyaltoledano/claude-task-master/commit/e3ed4d7c14b56894d7da675eb2b757423bea8f9d), [`04e11b5`](https://github.com/eyaltoledano/claude-task-master/commit/04e11b5e828597c0ba5b82ca7d5fb6f933e4f1e8), [`95640dc`](https://github.com/eyaltoledano/claude-task-master/commit/95640dcde87ce7879858c0a951399fb49f3b6397), [`311b243`](https://github.com/eyaltoledano/claude-task-master/commit/311b2433e23c771c8d3a4d3f5ac577302b8321e5)]:
+  - task-master-ai@0.25.0
+
+## 0.24.0-rc.0
+
+### Minor Changes
+
+- [#1040](https://github.com/eyaltoledano/claude-task-master/pull/1040) [`fc47714`](https://github.com/eyaltoledano/claude-task-master/commit/fc477143400fd11d953727bf1b4277af5ad308d1) Thanks [@DomVidja](https://github.com/DomVidja)! - "Add Kilo Code profile integration with custom modes and MCP configuration"
+
+- [#1100](https://github.com/eyaltoledano/claude-task-master/pull/1100) [`30ca144`](https://github.com/eyaltoledano/claude-task-master/commit/30ca144231c36a6c63911f20adc225d38fb15a2f) Thanks [@vedovelli](https://github.com/vedovelli)! - Display current task ID on task details page
+
+### Patch Changes
+
+- Updated dependencies [[`04e11b5`](https://github.com/eyaltoledano/claude-task-master/commit/04e11b5e828597c0ba5b82ca7d5fb6f933e4f1e8), [`fc47714`](https://github.com/eyaltoledano/claude-task-master/commit/fc477143400fd11d953727bf1b4277af5ad308d1), [`782728f`](https://github.com/eyaltoledano/claude-task-master/commit/782728ff95aa2e3b766d48273b57f6c6753e8573), [`3dee60d`](https://github.com/eyaltoledano/claude-task-master/commit/3dee60dc3d566e3cff650accb30f994b8bb3a15e), [`e3ed4d7`](https://github.com/eyaltoledano/claude-task-master/commit/e3ed4d7c14b56894d7da675eb2b757423bea8f9d), [`04e11b5`](https://github.com/eyaltoledano/claude-task-master/commit/04e11b5e828597c0ba5b82ca7d5fb6f933e4f1e8), [`95640dc`](https://github.com/eyaltoledano/claude-task-master/commit/95640dcde87ce7879858c0a951399fb49f3b6397), [`311b243`](https://github.com/eyaltoledano/claude-task-master/commit/311b2433e23c771c8d3a4d3f5ac577302b8321e5)]:
+  - task-master-ai@0.25.0-rc.0
+
 ## 0.23.1
 
 ### Patch Changes

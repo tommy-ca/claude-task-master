@@ -1,4 +1,4 @@
-# Available Models as of August 10, 2025
+# Available Models as of September 19, 2025
 
 ## Main Models
 
@@ -13,6 +13,10 @@
 | mcp         | mcp-sampling                                   | —         | 0          | 0           |
 | gemini-cli  | gemini-2.5-pro                                 | 0.72      | 0          | 0           |
 | gemini-cli  | gemini-2.5-flash                               | 0.71      | 0          | 0           |
+| grok-cli    | grok-4-latest                                  | 0.7       | 0          | 0           |
+| grok-cli    | grok-3-latest                                  | 0.65      | 0          | 0           |
+| grok-cli    | grok-3-fast                                    | 0.6       | 0          | 0           |
+| grok-cli    | grok-3-mini-fast                               | 0.55      | 0          | 0           |
 | openai      | gpt-4o                                         | 0.332     | 2.5        | 10          |
 | openai      | o1                                             | 0.489     | 15         | 60          |
 | openai      | o3                                             | 0.5       | 2          | 8           |
@@ -68,6 +72,9 @@
 | openrouter  | mistralai/mistral-small-3.1-24b-instruct       | —         | 0.1        | 0.3         |
 | openrouter  | mistralai/devstral-small                       | —         | 0.1        | 0.3         |
 | openrouter  | mistralai/mistral-nemo                         | —         | 0.03       | 0.07        |
+| ollama      | gpt-oss:latest                                 | 0.607     | 0          | 0           |
+| ollama      | gpt-oss:20b                                    | 0.607     | 0          | 0           |
+| ollama      | gpt-oss:120b                                   | 0.624     | 0          | 0           |
 | ollama      | devstral:latest                                | —         | 0          | 0           |
 | ollama      | qwen3:latest                                   | —         | 0          | 0           |
 | ollama      | qwen3:14b                                      | —         | 0          | 0           |
@@ -96,6 +103,10 @@
 | mcp         | mcp-sampling                                 | —         | 0          | 0           |
 | gemini-cli  | gemini-2.5-pro                               | 0.72      | 0          | 0           |
 | gemini-cli  | gemini-2.5-flash                             | 0.71      | 0          | 0           |
+| grok-cli    | grok-4-latest                                | 0.7       | 0          | 0           |
+| grok-cli    | grok-3-latest                                | 0.65      | 0          | 0           |
+| grok-cli    | grok-3-fast                                  | 0.6       | 0          | 0           |
+| grok-cli    | grok-3-mini-fast                             | 0.55      | 0          | 0           |
 | openai      | gpt-4o-search-preview                        | 0.33      | 2.5        | 10          |
 | openai      | gpt-4o-mini-search-preview                   | 0.3       | 0.15       | 0.6         |
 | xai         | grok-3                                       | —         | 3          | 15          |
@@ -132,6 +143,10 @@
 | mcp         | mcp-sampling                                   | —         | 0          | 0           |
 | gemini-cli  | gemini-2.5-pro                                 | 0.72      | 0          | 0           |
 | gemini-cli  | gemini-2.5-flash                               | 0.71      | 0          | 0           |
+| grok-cli    | grok-4-latest                                  | 0.7       | 0          | 0           |
+| grok-cli    | grok-3-latest                                  | 0.65      | 0          | 0           |
+| grok-cli    | grok-3-fast                                    | 0.6       | 0          | 0           |
+| grok-cli    | grok-3-mini-fast                               | 0.55      | 0          | 0           |
 | openai      | gpt-4o                                         | 0.332     | 2.5        | 10          |
 | openai      | o3                                             | 0.5       | 2          | 8           |
 | openai      | o4-mini                                        | 0.45      | 1.1        | 4.4         |
@@ -174,6 +189,9 @@
 | openrouter  | qwen/qwen3-235b-a22b                           | —         | 0.14       | 2           |
 | openrouter  | mistralai/mistral-small-3.1-24b-instruct       | —         | 0.1        | 0.3         |
 | openrouter  | mistralai/mistral-nemo                         | —         | 0.03       | 0.07        |
+| ollama      | gpt-oss:latest                                 | 0.607     | 0          | 0           |
+| ollama      | gpt-oss:20b                                    | 0.607     | 0          | 0           |
+| ollama      | gpt-oss:120b                                   | 0.624     | 0          | 0           |
 | ollama      | devstral:latest                                | —         | 0          | 0           |
 | ollama      | qwen3:latest                                   | —         | 0          | 0           |
 | ollama      | qwen3:14b                                      | —         | 0          | 0           |
